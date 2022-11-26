@@ -1,0 +1,1 @@
+# event-store-db-playground
