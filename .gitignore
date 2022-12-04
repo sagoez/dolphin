@@ -42,3 +42,7 @@ Thumbs.db
 target/
 project/project/
 project/target/
+
+# Main
+Main.scala
+playground.*
