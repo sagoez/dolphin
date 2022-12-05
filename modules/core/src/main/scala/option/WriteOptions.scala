@@ -1,3 +1,7 @@
+// Copyright (c) 2022 by Samuel Gomez
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin.option
 
 import scala.util.Try
@@ -15,16 +19,27 @@ sealed abstract case class WriteOptions private () extends Product with Serializ
 
   def get: Try[AppendToStreamOptions] = Try(AppendToStreamOptions.get())
 
-  def withDeadline(long: Long): WriteOptions =
+  /** A length of time (in milliseconds) to use for gRPC deadlines.
+    * @param durationInMs
+    */
+  def withDeadline(durationInMs: Long): WriteOptions =
     new WriteOptions {
-      override def get: Try[AppendToStreamOptions] = self.get.map(_.deadline(long))
+      override def get: Try[AppendToStreamOptions] = self.get.map(_.deadline(durationInMs))
     }
 
+  /** Asks the server to check that the stream receiving is at the given expected version.
+    *
+    * @param revision
+    *   expected revision.
+    */
   def withExpectedRevision(expectedRevision: ExpectedRevision): WriteOptions =
     new WriteOptions {
       override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(expectedRevision))
     }
 
+  /** If true, requires the request to be performed by the leader of the cluster.
+    * @param value
+    */
   def withLeaderRequired(isRequired: Boolean): WriteOptions =
     new WriteOptions {
       override def get: Try[AppendToStreamOptions] = self.get.map(_.requiresLeader(isRequired))

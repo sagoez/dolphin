@@ -1,7 +1,11 @@
+// Copyright (c) 2022 by Samuel Gomez
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin.util
 
 import cats.MonadThrow
-import cats.effect.kernel.{Resource, MonadCancelThrow}
+import cats.effect.kernel.{MonadCancelThrow, Resource}
 import cats.syntax.applicative.*
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*

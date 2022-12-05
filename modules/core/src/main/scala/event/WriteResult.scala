@@ -1,3 +1,7 @@
+// Copyright (c) 2022 by Samuel Gomez
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin.event
 
 import java.util.concurrent.CompletableFuture
@@ -8,12 +12,17 @@ import cats.syntax.functor.*
 import com.eventstore.dbclient.{ExpectedRevision, Position, WriteResult => EventStoreWriteResult}
 import org.typelevel.log4cats.Logger
 
+/// TODO: Returning Position and ExpectedRevision is not very safe as it exposes the underlying implementation. We should wrap it in a case class.
 sealed abstract case class WriteResult[F[_]: Async] private (
   private val completableFuture: CompletableFuture[EventStoreWriteResult]
 ) { self =>
 
+  /** Transaction log position of the write.
+    */
   def getLogPosition: F[Position] = Async[F].fromCompletableFuture(completableFuture.pure[F]).map(_.getLogPosition)
 
+  /** Next expected version of the stream.
+    */
   def getNextExpectedRevision: F[ExpectedRevision] = Async[F]
     .fromCompletableFuture(completableFuture.pure[F])
     .map(_.getNextExpectedRevision)

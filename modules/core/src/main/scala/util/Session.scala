@@ -1,3 +1,7 @@
+// Copyright (c) 2022 by Samuel Gomez
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin.util
 
 import java.util.UUID
@@ -6,18 +10,18 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success}
 
 import dolphin.StoreSession
-import dolphin.event.{WriteResult, ReadResult}
-import dolphin.event.WriteResult.WriteResultOps
+import dolphin.event.DeleteResult.DeleteResultOps
 import dolphin.event.ReadResult.ReadResultOps
-import dolphin.option.{ReadOptions, WriteOptions}
+import dolphin.event.WriteResult.WriteResultOps
+import dolphin.event.{DeleteResult, ReadResult, WriteResult}
+import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
 
 import cats.effect.kernel.{Async, Resource}
 import cats.syntax.all.*
-import com.eventstore.dbclient.{WriteResult as _, ReadResult as _, *}
-import org.typelevel.log4cats.Logger
-import cats.Applicative
-import cats.FlatMap
+import cats.{Applicative, FlatMap}
+import com.eventstore.dbclient.{ReadResult => _, WriteResult => _, _}
 import fs2.Stream
+import org.typelevel.log4cats.Logger
 
 // TODO: Write pretty printer for the errors so users can see what went wrong in a very VERY easy way
 // TODO: Add metadata to the write methods
@@ -50,6 +54,21 @@ private[dolphin] object Session {
       new StoreSession[F] {
         def shutdown: F[Unit] = Async[F].delay(client.shutdown())
 
+        def delete(streamAggregateId: String): F[DeleteResult[F]] =
+          client
+            .deleteStream(streamAggregateId)
+            .toSafeAttempt
+
+        def delete(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]] =
+          options.get match {
+            case Failure(exception) =>
+              Logger[F].error(exception)(s"Failed to get delete options: $exception") *> Async[F].raiseError(exception)
+            case Success(options)   =>
+              client
+                .deleteStream(streamAggregateId, options)
+                .toSafeAttempt
+          }
+
         def write(
           stream: String,
           event: Array[Byte],
@@ -68,7 +87,7 @@ private[dolphin] object Session {
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get options: $exception") *> Async[F].raiseError(exception)
+              Logger[F].error(exception)(s"Failed to get write options: $exception") *> Async[F].raiseError(exception)
             case Success(options)   =>
               eventData(event, `type`).flatMap { events =>
                 client.appendToStream(stream, options, events).toSafeAttempt
@@ -84,7 +103,7 @@ private[dolphin] object Session {
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get options: $exception") *> Async[F].raiseError(exception)
+              Logger[F].error(exception)(s"Failed to get write options: $exception") *> Async[F].raiseError(exception)
             case Success(options)   =>
               eventData(events, `type`).flatMap { events =>
                 client.appendToStream(stream, options, events).toSafeAttempt

@@ -1,32 +1,24 @@
 import Dependencies._
 
-ThisBuild / scalaVersion      := "2.13.9"
-ThisBuild / version           := "0.0.1"
+ThisBuild / tlBaseVersion := "0.1"
+
+ThisBuild / scalaVersion               := "2.13.9"
+ThisBuild / startYear                  := Some(2022)
 ThisBuild / scalafixDependencies ++= Seq(Libraries.organizeImports)
-ThisBuild / organization      := "com.lapsus"
-ThisBuild / licenses          := Seq(License.MIT)
-ThisBuild / developers        := List(
-  Developer("lapsusHQ", "Samuel", "sgomezj18@gmail.com", url("https://samuelgomez.co/"))
+ThisBuild / organization               := "com.lapsus"
+ThisBuild / organizationName           := "Lapsus"
+ThisBuild / licenses                   := Seq(License.MIT)
+ThisBuild / developers                 := List(
+  tlGitHubDev("samgj18", "Samuel Gomez")
 )
-ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
+ThisBuild / semanticdbEnabled          := true
+ThisBuild / tlJdkRelease               := Some(17)
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+ThisBuild / tlCiReleaseBranches        := Seq("main")
 
 lazy val commonSettings = Seq(
-  // Resolvers
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
-
-  // Headers
-  headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
-  headerLicense  := Some(
-    HeaderLicense.Custom(
-      """|Copyright (c) 2022 by Samuel Gomez
-       |This software is licensed under the MIT License (MIT).
-       |For more information see LICENSE or https://opensource.org/licenses/MIT
-       |""".stripMargin
-    )
-  ),
-
-  // Compilation
   scalacOptions ++= Seq(
     "-Ymacro-annotations",
     "-Xsource:3",
@@ -36,15 +28,11 @@ lazy val commonSettings = Seq(
   ),
 )
 
-lazy val dolphin = project
-  .in(file("."))
+lazy val dolphin = tlCrossRootProject
+  .settings(commonSettings)
+  .aggregate(core, circe)
   .settings(
-    name := "dolphin",
-    commonSettings,
-  )
-  .aggregate(
-    core,
-    circe,
+    name := "dolphin"
   )
 
 lazy val circe = project

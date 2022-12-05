@@ -1,18 +1,22 @@
+// Copyright (c) 2022 by Samuel Gomez
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin
 
-import dolphin.event.{WriteResult, ReadResult}
-import dolphin.option.{ReadOptions, WriteOptions}
+import dolphin.event.{DeleteResult, ReadResult, WriteResult}
+import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
 import dolphin.util.{Client, Session}
 
 import cats.effect.kernel.{Async, Resource}
-import org.typelevel.log4cats.Logger
 import fs2.Stream
+import org.typelevel.log4cats.Logger
 
 trait StoreSession[F[_]] { self =>
 
   /** Write an event to a stream
-    * @param stream
-    *   The stream to write to
+    * @param streamAggregateId
+    *   The id that will aggregate all the events of the stream
     * @param event
     *   The event to write as a string
     * @param `type`
@@ -20,11 +24,11 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(stream: String, event: Array[Byte], `type`: String): F[WriteResult[F]]
+  def write(streamAggregateId: String, event: Array[Byte], `type`: String): F[WriteResult[F]]
 
   /** Write an event to a stream
-    * @param stream
-    *   The stream to write to
+    * @param streamAggregateId
+    *   The id that will aggregate all the events of the stream
     * @param options
     *   The options to use when writing to the stream
     * @param event
@@ -34,11 +38,11 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(stream: String, options: WriteOptions, event: Array[Byte], `type`: String): F[WriteResult[F]]
+  def write(streamAggregateId: String, options: WriteOptions, event: Array[Byte], `type`: String): F[WriteResult[F]]
 
   /** Write a list of events to a stream
-    * @param stream
-    *   The stream to write to
+    * @param streamAggregateId
+    *   The id that will aggregate all the events of the stream
     * @param options
     *   The options to use when writing to the stream
     * @param events
@@ -48,11 +52,16 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(stream: String, options: WriteOptions, events: List[List[Byte]], `type`: String): F[WriteResult[F]]
+  def write(
+    streamAggregateId: String,
+    options: WriteOptions,
+    events: List[List[Byte]],
+    `type`: String,
+  ): F[WriteResult[F]]
 
   /** Write a list of events to a stream
-    * @param stream
-    *   The stream to write to
+    * @param streamAggregateId
+    *   The id that will aggregate all the events of the stream
     * @param events
     *   The events to write as a list of strings
     * @param `type`
@@ -60,11 +69,11 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(stream: String, events: List[List[Byte]], `type`: String): F[WriteResult[F]]
+  def write(streamAggregateId: String, events: List[List[Byte]], `type`: String): F[WriteResult[F]]
 
   /** Read events from a stream.
-    * @param stream
-    *   The stream to read from.
+    * @param streamAggregateId
+    *   The id of the stream aggregate to read from
     * @param options
     *   The options to use when reading from the stream.
     * @return
@@ -72,9 +81,23 @@ trait StoreSession[F[_]] { self =>
     */
 
   def read(
-    stream: String,
+    streamAggregateId: String,
     options: ReadOptions,
   ): F[ReadResult[F]]
+
+  /** Delete a stream from the EventStoreDB server
+    * @param streamAggregateId
+    *   The id of the stream aggregate to read from
+    */
+  def delete(streamAggregateId: String): F[DeleteResult[F]]
+
+  /** Delete a stream from the EventStoreDB server
+    * @param streamAggregateId
+    *   The id of the stream aggregate to read from
+    * @param options
+    *   The options to use when deleting the stream
+    */
+  def delete(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]]
 
 }
 

@@ -42,6 +42,9 @@ Thumbs.db
 target/
 project/project/
 project/target/
+.native/
+.js/
+.jvm/
 
 # Main
 Main.scala
