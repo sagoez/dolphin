@@ -1,24 +1,35 @@
 import Dependencies._
 
-ThisBuild / tlBaseVersion := "0.1"
+ThisBuild / tlBaseVersion := "0.0"
 
-ThisBuild / scalaVersion               := "2.13.9"
+ThisBuild / scalaVersion               := "2.13.10"
 ThisBuild / startYear                  := Some(2022)
 ThisBuild / scalafixDependencies ++= Seq(Libraries.organizeImports)
-ThisBuild / organization               := "com.lapsus"
-ThisBuild / organizationName           := "Lapsus"
+ThisBuild / organization               := "io.github.lapsushq"
 ThisBuild / licenses                   := Seq(License.MIT)
+ThisBuild / tlSonatypeUseLegacyHost    := false
 ThisBuild / developers                 := List(
   tlGitHubDev("samgj18", "Samuel Gomez")
 )
 ThisBuild / semanticdbVersion          := scalafixSemanticdb.revision
 ThisBuild / semanticdbEnabled          := true
 ThisBuild / tlJdkRelease               := Some(17)
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 ThisBuild / tlCiReleaseBranches        := Seq("main")
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 lazy val commonSettings = Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+
+  // Headers
+  headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
+  headerLicense  := Some(
+    HeaderLicense.Custom(
+      """|Copyright (c) 2022 by LapsusHQ
+       |This software is licensed under the MIT License (MIT).
+       |For more information see LICENSE or https://opensource.org/licenses/MIT
+       |""".stripMargin
+    )
+  ),
   scalacOptions ++= Seq(
     "-Ymacro-annotations",
     "-Xsource:3",
@@ -69,7 +80,7 @@ lazy val core = project
     ),
   )
 
-addCommandAlias("lint", "scalafmtAll; scalafixAll --rules OrganizeImports; scalafmtSbt")
+addCommandAlias("lint", "scalafmtAll; scalafixAll --rules OrganizeImports; scalafmtSbt; headerCreateAll")
 addCommandAlias(
   "build",
   "clean; all scalafmtCheckAll scalafmtSbtCheck compile test doc",

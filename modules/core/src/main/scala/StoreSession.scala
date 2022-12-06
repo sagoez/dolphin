@@ -1,4 +1,4 @@
-// Copyright (c) 2022 by Samuel Gomez
+// Copyright (c) 2022 by LapsusHQ
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,7 +6,7 @@ package dolphin
 
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
 import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
-import dolphin.util.{Client, Session}
+import dolphin.client.{Client, Session}
 
 import cats.effect.kernel.{Async, Resource}
 import fs2.Stream

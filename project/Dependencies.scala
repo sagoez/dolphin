@@ -6,8 +6,8 @@ object Dependencies {
 
     val betterMonadicFor   = "0.3.1"
     val catsCore           = "2.9.0"
-    val catsEffect         = "3.4.1"
-    val circe              = "0.14.1"
+    val catsEffect         = "3.4.2"
+    val circe              = "0.14.3"
     val fs2                = "3.4.0"
     val eventStoreDbClient = "4.0.0"
     val kindProjector      = "0.13.2"

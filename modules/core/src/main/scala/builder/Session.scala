@@ -1,8 +1,8 @@
-// Copyright (c) 2022 by Samuel Gomez
+// Copyright (c) 2022 by LapsusHQ
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.util
+package dolphin.client
 
 import java.util.UUID
 
@@ -134,6 +134,8 @@ private[dolphin] object Session {
               Logger[F].error(exception)(s"Failed to get read options: $exception") >> Async[F].raiseError(exception)
             case Success(options)   => client.readStream(stream, options).toSafeAttempt
           }
+
+        // TODO: Add the rest of the methods and their corresponding data types
 
       }.pure[F]
     }(_.shutdown)
