@@ -14,7 +14,7 @@ import scala.util.Try
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
-import com.eventstore.dbclient.{ReadResult as EventStoreReadResult, _}
+import com.eventstore.dbclient.{ReadResult as EventStoreReadResult, *}
 import fs2.Stream
 import org.typelevel.log4cats.Logger
 
@@ -22,7 +22,9 @@ sealed abstract case class ReadResult[F[_]: Async] private (
   private val completableFuture: CompletableFuture[EventStoreReadResult]
 ) { self =>
 
-  private def get = Async[F].fromCompletableFuture[EventStoreReadResult](completableFuture.pure[F])
+  private def get: F[EventStoreReadResult] = Async[F].fromCompletableFuture[EventStoreReadResult](
+    completableFuture.pure[F]
+  )
 
   /** Returns all the events of the read operation.
     */

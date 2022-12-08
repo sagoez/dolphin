@@ -12,12 +12,19 @@ import com.eventstore.dbclient.{AppendToStreamOptions, ExpectedRevision}
 sealed abstract case class WriteOptions private () extends Product with Serializable {
   self =>
 
-  def withExpectedRevision(expectedRevision: Long): WriteOptions =
+  /** Asks the server to check that the stream receiving is at the given expected version.
+    *
+    * @param revision
+    *   \- expected revision.
+    * @return
+    *   updated options.
+    */
+  def withExpectedRevision(revision: Long): WriteOptions =
     new WriteOptions {
-      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(expectedRevision))
+      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(revision))
     }
 
-  def get: Try[AppendToStreamOptions] = Try(AppendToStreamOptions.get())
+  protected[dolphin] def get: Try[AppendToStreamOptions] = Try(AppendToStreamOptions.get())
 
   /** A length of time (in milliseconds) to use for gRPC deadlines.
     * @param durationInMs
@@ -32,9 +39,9 @@ sealed abstract case class WriteOptions private () extends Product with Serializ
     * @param revision
     *   expected revision.
     */
-  def withExpectedRevision(expectedRevision: ExpectedRevision): WriteOptions =
+  def withExpectedRevision(revision: ExpectedRevision): WriteOptions =
     new WriteOptions {
-      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(expectedRevision))
+      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(revision))
     }
 
   /** If true, requires the request to be performed by the leader of the cluster.

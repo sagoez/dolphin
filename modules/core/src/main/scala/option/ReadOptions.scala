@@ -27,7 +27,7 @@ sealed abstract case class ReadOptions private () extends Product with Serializa
       override def get: Try[ReadStreamOptions] = self.get.map(_.maxCount(count))
     }
 
-  private[dolphin] def get: Try[ReadStreamOptions] = Try(ReadStreamOptions.get())
+  protected[dolphin] def get: Try[ReadStreamOptions] = Try(ReadStreamOptions.get())
 
   /** Reads stream in revision-ascending order.
     */

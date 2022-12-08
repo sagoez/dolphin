@@ -9,14 +9,16 @@ import java.util.concurrent.CompletableFuture
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
-import com.eventstore.dbclient.{DeleteResult as EventStoreDeleteResult, _}
+import com.eventstore.dbclient.{DeleteResult as EventStoreDeleteResult, *}
 import org.typelevel.log4cats.Logger
 
 sealed abstract case class DeleteResult[F[_]: Async] private (
   private val completableFuture: CompletableFuture[EventStoreDeleteResult]
 ) { self =>
 
-  private def get = Async[F].fromCompletableFuture[EventStoreDeleteResult](completableFuture.pure[F])
+  protected def get: F[EventStoreDeleteResult] = Async[F].fromCompletableFuture[EventStoreDeleteResult](
+    completableFuture.pure[F]
+  )
 
   /** Returns the transaction log position of the stream deletion.
     */

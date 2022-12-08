@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
-import com.eventstore.dbclient.{ExpectedRevision, Position, WriteResult => EventStoreWriteResult}
+import com.eventstore.dbclient.{ExpectedRevision, Position, WriteResult as EventStoreWriteResult}
 import org.typelevel.log4cats.Logger
 
 /// TODO: Returning Position and ExpectedRevision is not very safe as it exposes the underlying implementation. We should wrap it in a case class.

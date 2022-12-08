@@ -19,7 +19,7 @@ import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
 import cats.effect.kernel.{Async, Resource}
 import cats.syntax.all.*
 import cats.{Applicative, FlatMap}
-import com.eventstore.dbclient.{ReadResult => _, WriteResult => _, _}
+import com.eventstore.dbclient.{ReadResult as _, WriteResult as _, *}
 import fs2.Stream
 import org.typelevel.log4cats.Logger
 
@@ -131,7 +131,8 @@ private[dolphin] object Session {
         ): F[ReadResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get read options: $exception") >> Async[F].raiseError(exception)
+              Logger[F].error(exception)(s"Failed to get read options: $exception") >> Async[F]
+                .raiseError[ReadResult[F]](exception)
             case Success(options)   => client.readStream(stream, options).toSafeAttempt
           }
 

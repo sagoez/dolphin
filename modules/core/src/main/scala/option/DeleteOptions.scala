@@ -13,7 +13,7 @@ sealed abstract case class DeleteOptions private () extends Product with Seriali
 
   /** Returns options with default values.
     */
-  def get: Try[DeleteStreamOptions] = Try(DeleteStreamOptions.get())
+  protected[dolphin] def get: Try[DeleteStreamOptions] = Try(DeleteStreamOptions.get())
 
 }
 
