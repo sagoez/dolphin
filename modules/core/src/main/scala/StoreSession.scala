@@ -6,7 +6,7 @@ package dolphin
 
 import dolphin.client.{Client, Session}
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
-import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
+import dolphin.option._
 
 import cats.effect.kernel.{Async, Resource}
 import fs2.Stream
@@ -24,7 +24,7 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(streamAggregateId: String, event: Array[Byte], `type`: String): F[WriteResult[F]]
+  def write(streamAggregateId: String, event: EventWithMetadata, `type`: String): F[WriteResult[F]]
 
   /** Write an event to a stream
     * @param streamAggregateId
@@ -38,7 +38,12 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(streamAggregateId: String, options: WriteOptions, event: Array[Byte], `type`: String): F[WriteResult[F]]
+  def write(
+    streamAggregateId: String,
+    options: WriteOptions,
+    event: EventWithMetadata,
+    `type`: String,
+  ): F[WriteResult[F]]
 
   /** Write a list of events to a stream
     * @param streamAggregateId
@@ -55,7 +60,7 @@ trait StoreSession[F[_]] { self =>
   def write(
     streamAggregateId: String,
     options: WriteOptions,
-    events: List[List[Byte]],
+    events: List[EventWithMetadata],
     `type`: String,
   ): F[WriteResult[F]]
 
@@ -69,7 +74,7 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def write(streamAggregateId: String, events: List[List[Byte]], `type`: String): F[WriteResult[F]]
+  def write(streamAggregateId: String, events: List[EventWithMetadata], `type`: String): F[WriteResult[F]]
 
   /** Read events from a stream.
     * @param streamAggregateId
@@ -84,6 +89,18 @@ trait StoreSession[F[_]] { self =>
     streamAggregateId: String,
     options: ReadOptions,
   ): F[ReadResult[F]]
+
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    * @param stream
+    *   Aggregate id of the stream to subscribe to
+    * @param options
+    *   Options to use when subscribing to the stream
+    * @return
+    */
+  def subscribeToStream(
+    stream: String,
+    options: SubscriptionOptions,
+  ): Stream[F, Either[Throwable, Event]]
 
   /** Delete a stream from the EventStoreDB server
     * @param streamAggregateId

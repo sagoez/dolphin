@@ -9,17 +9,18 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success}
 
-import dolphin.StoreSession
+import dolphin.concurrent.SubscriptionListener
 import dolphin.event.DeleteResult.DeleteResultOps
 import dolphin.event.ReadResult.ReadResultOps
 import dolphin.event.WriteResult.WriteResultOps
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
-import dolphin.option.{DeleteOptions, ReadOptions, WriteOptions}
+import dolphin.option._
+import dolphin.{Event, EventWithMetadata, StoreSession}
 
 import cats.effect.kernel.{Async, Resource}
 import cats.syntax.all.*
 import cats.{Applicative, FlatMap}
-import com.eventstore.dbclient.{ReadResult as _, WriteResult as _, *}
+import com.eventstore.dbclient.{ReadResult as _, SubscriptionListener as _, WriteResult as _, *}
 import fs2.Stream
 import org.typelevel.log4cats.Logger
 
@@ -28,22 +29,27 @@ import org.typelevel.log4cats.Logger
 private[dolphin] object Session {
 
   private def eventData[F[_]: Applicative: FlatMap](
-    event: Array[Byte],
+    event: EventWithMetadata,
     `type`: String,
   ) = UUID.randomUUID().pure[F].flatMap { uuid =>
     EventData
-      .builderAsBinary(`type`, event)
-      .eventId(uuid)
+      .builderAsBinary(uuid, `type`, event._1)
+      .metadataAsBytes(event._2.getOrElse(Array.emptyByteArray))
       .build()
       .pure[F]
   }
 
   private def eventData[F[_]: Applicative: FlatMap](
-    events: List[List[Byte]],
+    events: List[EventWithMetadata],
     `type`: String,
   ) = UUID.randomUUID().pure[F].flatMap { uuid =>
     events
-      .map(event => EventData.builderAsBinary(uuid, `type`, event.toArray).build())
+      .map { event =>
+        EventData
+          .builderAsBinary(uuid, `type`, event._1)
+          .metadataAsBytes(event._2.getOrElse(Array.emptyByteArray))
+          .build()
+      }
       .asJava
       .iterator()
       .pure[F]
@@ -71,7 +77,7 @@ private[dolphin] object Session {
 
         def write(
           stream: String,
-          event: Array[Byte],
+          event: EventWithMetadata,
           `type`: String,
         ): F[WriteResult[F]] = eventData(event, `type`).flatMap { event =>
           client
@@ -79,10 +85,11 @@ private[dolphin] object Session {
             .toSafeAttempt
 
         }
+
         def write(
           stream: String,
           options: WriteOptions,
-          event: Array[Byte],
+          event: EventWithMetadata,
           `type`: String,
         ): F[WriteResult[F]] =
           options.get match {
@@ -98,7 +105,7 @@ private[dolphin] object Session {
         def write(
           stream: String,
           options: WriteOptions,
-          events: List[List[Byte]],
+          events: List[EventWithMetadata],
           `type`: String,
         ): F[WriteResult[F]] =
           options.get match {
@@ -113,7 +120,7 @@ private[dolphin] object Session {
 
         def write(
           stream: String,
-          events: List[List[Byte]],
+          events: List[EventWithMetadata],
           `type`: String,
         ): F[WriteResult[F]] = eventData(events, `type`).flatMap { events =>
           client
@@ -137,6 +144,28 @@ private[dolphin] object Session {
           }
 
         // TODO: Add the rest of the methods and their corresponding data types
+
+        def subscribeToStream(
+          stream: String,
+          options: SubscriptionOptions,
+        ): Stream[F, Either[Throwable, Event]] =
+          options.get match {
+            case Failure(exception) =>
+              Stream.eval(Logger[F].error(exception)(s"Failed to get subscription options: $exception")) >> Stream
+                .raiseError(
+                  exception
+                )
+
+            case Success(options) =>
+              val listener = SubscriptionListener.default[F]
+              Stream
+                .eval(
+                  Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.underlying, options).pure[F])
+                )
+                .flatMap { _ =>
+                  listener.subscription
+                }
+          }
 
       }.pure[F]
     }(_.shutdown)

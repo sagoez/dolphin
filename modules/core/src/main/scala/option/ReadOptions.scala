@@ -81,6 +81,6 @@ object ReadOptions {
     * @return
     *   a new [[ReadOptions]] instance
     */
-  def default: ReadOptions = new ReadOptions {}.withMaxCount(1).backward
+  def default: ReadOptions = new ReadOptions {}
 
 }

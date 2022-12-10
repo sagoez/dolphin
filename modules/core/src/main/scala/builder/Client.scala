@@ -37,5 +37,5 @@ private[dolphin] object Client {
     host: String,
     port: Int,
     tls: Boolean = false,
-  ) = Stream.resource(makeResource(host, port, tls))
+  ): Stream[F, EventStoreDBClient] = Stream.resource(makeResource(host, port, tls))
 }

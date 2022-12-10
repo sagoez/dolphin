@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
-import com.eventstore.dbclient.{DeleteResult as EventStoreDeleteResult, *}
+import com.eventstore.dbclient.DeleteResult as EventStoreDeleteResult
 import org.typelevel.log4cats.Logger
 
 sealed abstract case class DeleteResult[F[_]: Async] private (
@@ -20,9 +20,13 @@ sealed abstract case class DeleteResult[F[_]: Async] private (
     completableFuture.pure[F]
   )
 
-  /** Returns the transaction log position of the stream deletion.
+  /** Returns the commit position.
     */
-  def getPosition: F[Position] = get.map(_.getPosition())
+  def getCommitUnsigned: F[Long] = get.map(_.getPosition.getCommitUnsigned)
+
+  /** Returns the prepare position.
+    */
+  def getPrepareUnsigned: F[Long] = get.map(_.getPosition.getPrepareUnsigned)
 
 }
 

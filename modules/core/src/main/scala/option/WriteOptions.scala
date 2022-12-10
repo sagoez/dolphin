@@ -6,7 +6,10 @@ package dolphin.option
 
 import scala.util.Try
 
-import com.eventstore.dbclient.{AppendToStreamOptions, ExpectedRevision}
+import dolphin.concurrent.ExpectedRevision
+import dolphin.concurrent.ExpectedRevision.ExpectedRevisionOps
+
+import com.eventstore.dbclient.AppendToStreamOptions
 
 // Should I manage credentials here?
 sealed abstract case class WriteOptions private () extends Product with Serializable {
@@ -41,7 +44,7 @@ sealed abstract case class WriteOptions private () extends Product with Serializ
     */
   def withExpectedRevision(revision: ExpectedRevision): WriteOptions =
     new WriteOptions {
-      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(revision))
+      override def get: Try[AppendToStreamOptions] = self.get.map(_.expectedRevision(revision.toJava))
     }
 
   /** If true, requires the request to be performed by the leader of the cluster.

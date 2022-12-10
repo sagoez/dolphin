@@ -7,9 +7,10 @@ This project is a little playground for me to learn more about EventStoreDB and 
 ## Roadmap
 
 - [x] Add a docker-compose file to run EventStoreDB
+- [x] Figure out what to do with some result data types like Position, ExpectedVersion
+- [x] [Write a simple application that uses this wrapper](https://github.com/samgj18/event-sourcing-poc/tree/main)
+- [x] Keep the wrapper up to date with the latest version of the Java client
 - [ ] Write tests for the application
-- [ ] Write a simple application that uses this wrapper
 - [ ] Write documentation on how to use the wrapper
-- [ ] Keep the wrapper up to date with the latest version of the Java client
-- [ ] Write all the missing data types and methods in the wrapper (e.g. projections, subscriptions, etc.) and figure out what to do with some result data types like Position, ExpectedVersion, etc.
-- [ ] Revisit design decisions and refactor if needed as keeping the session open for the whole application lifetime is not ideal since it starves the cpu.
+- [ ] Write all the missing data types and methods in the wrapper (e.g. projections, subscriptions etc.)
+- [ ] Revisit design decisions and refactor if needed as keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
