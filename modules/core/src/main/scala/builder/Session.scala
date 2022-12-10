@@ -14,7 +14,7 @@ import dolphin.event.DeleteResult.DeleteResultOps
 import dolphin.event.ReadResult.ReadResultOps
 import dolphin.event.WriteResult.WriteResultOps
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
-import dolphin.option._
+import dolphin.option.*
 import dolphin.{Event, EventWithMetadata, StoreSession}
 
 import cats.effect.kernel.{Async, Resource}

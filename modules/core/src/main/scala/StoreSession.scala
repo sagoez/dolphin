@@ -6,7 +6,7 @@ package dolphin
 
 import dolphin.client.{Client, Session}
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
-import dolphin.option._
+import dolphin.option.*
 
 import cats.effect.kernel.{Async, Resource}
 import fs2.Stream
