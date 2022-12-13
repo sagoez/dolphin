@@ -23,7 +23,7 @@ object SubscriptionListener {
 }
 
 private[dolphin] final case class Underlying[F[_]: Sync]() extends JSubscriptionListener {
-  private val queue = new java.util.concurrent.ConcurrentLinkedQueue[Either[Throwable, Event]]()
+  private[dolphin] val queue = new java.util.concurrent.ConcurrentLinkedQueue[Either[Throwable, Event]]()
 //  private val queue = Queue.bounded[F, Event](100)
 
   /** Called when an exception was raised when processing an event.
@@ -46,7 +46,7 @@ private[dolphin] final case class Underlying[F[_]: Sync]() extends JSubscription
     */
   override def onEvent(
     subscription: Subscription,
-    event: ResolvedEvent,
+    event: ResolvedEvent
   ): Unit = {
 
     queue.add(Right(event.getOriginalEvent.getEventData))

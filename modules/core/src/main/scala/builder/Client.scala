@@ -17,7 +17,7 @@ private[dolphin] object Client {
   def makeResource[F[_]: MonadThrow](
     host: String,
     port: Int,
-    tls: Boolean = false,
+    tls: Boolean = false
   ): Resource[F, EventStoreDBClient] = Resource.eval {
     MonadThrow[F].attempt(
       EventStoreDBConnectionString
@@ -36,6 +36,6 @@ private[dolphin] object Client {
   def makeStream[F[_]: MonadCancelThrow](
     host: String,
     port: Int,
-    tls: Boolean = false,
+    tls: Boolean = false
   ): Stream[F, EventStoreDBClient] = Stream.resource(makeResource(host, port, tls))
 }

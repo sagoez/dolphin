@@ -44,7 +44,7 @@ trait StoreSession[F[_]] { self =>
     streamAggregateId: String,
     options: WriteOptions,
     event: EventWithMetadata,
-    `type`: String,
+    `type`: String
   ): F[WriteResult[F]]
 
   /** Write a list of events to a stream
@@ -63,7 +63,7 @@ trait StoreSession[F[_]] { self =>
     streamAggregateId: String,
     options: WriteOptions,
     events: List[EventWithMetadata],
-    `type`: String,
+    `type`: String
   ): F[WriteResult[F]]
 
   /** Write a list of events to a stream
@@ -88,7 +88,7 @@ trait StoreSession[F[_]] { self =>
     */
   def read(
     streamAggregateId: String,
-    options: ReadOptions,
+    options: ReadOptions
   ): F[ReadResult[F]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -101,7 +101,7 @@ trait StoreSession[F[_]] { self =>
     */
   def subscribeToStream(
     stream: String,
-    options: SubscriptionOptions,
+    options: SubscriptionOptions
   ): Stream[F, Either[Throwable, Event]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -172,10 +172,10 @@ object StoreSession {
   def resource[F[_]: Async: Logger](
     host: String,
     port: Int,
-    tls: Boolean,
+    tls: Boolean
   )(
     implicit line: Line,
-    file: File,
+    file: File
   ): Resource[F, StoreSession[F]] =
     for {
       case implicit0(trace: Trace[F]) <- Resource.pure(Trace.instance[F])
@@ -198,10 +198,10 @@ object StoreSession {
   def stream[F[_]: Async: Logger](
     host: String,
     port: Int,
-    tls: Boolean,
+    tls: Boolean
   )(
     implicit line: Line,
-    file: File,
+    file: File
   ): Stream[F, StoreSession[F]] =
     for {
       case implicit0(trace: Trace[F]) <- Stream.emit(Trace.instance[F])

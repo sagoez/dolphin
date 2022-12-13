@@ -16,41 +16,46 @@ object Dependencies {
     val organizeImports    = "0.6.0"
     val semanticDB         = "4.6.0"
     val scodecBits         = "1.1.34"
+    val weaver             = "0.8.1"
 
   }
 
   object Libraries {
 
-    def circe(artifact: String) = "io.circe" %% s"circe-$artifact" % V.circe
+    def circe(artifact: String): ModuleID = "io.circe" %% s"circe-$artifact" % V.circe
 
-    val catsCore           = "org.typelevel" %% "cats-core"      % V.catsCore
-    val catsEffect         = "org.typelevel" %% "cats-effect"    % V.catsEffect
-    val circeCore          = circe("core")
-    val circeGeneric       = circe("generic")
-    val circeGenericExtras = circe("generic-extras")
-    val circeParser        = circe("parser")
-    val circeScodec        = circe("scodec")
-    val fs2Core            = "co.fs2"        %% "fs2-core"       % V.fs2
-    val eventStoreDbClient = "com.eventstore" % "db-client-java" % V.eventStoreDbClient
-    val scodecBits         = "org.scodec"    %% "scodec-bits"    % V.scodecBits
-    val sourceCode         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
+    val catsCore: ModuleID           = "org.typelevel" %% "cats-core"      % V.catsCore
+    val catsEffect: ModuleID         = "org.typelevel" %% "cats-effect"    % V.catsEffect
+    val circeCore: ModuleID          = circe("core")
+    val circeGeneric: ModuleID       = circe("generic")
+    val circeGenericExtras: ModuleID = circe("generic-extras")
+    val circeParser: ModuleID        = circe("parser")
+    val fs2Core: ModuleID            = "co.fs2"        %% "fs2-core"       % V.fs2
+    val eventStoreDbClient: ModuleID = "com.eventstore" % "db-client-java" % V.eventStoreDbClient
+    val sourceCode: ModuleID         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
 
-    val log4cats        = "org.typelevel"        %% "log4cats-slf4j"   % V.log4cats
-    val logback         = "ch.qos.logback"        % "logback-classic"  % V.logback
-    val organizeImports = "com.github.liancheng" %% "organize-imports" % V.organizeImports
+    val log4cats: ModuleID        = "org.typelevel"        %% "log4cats-slf4j"   % V.log4cats
+    val logback: ModuleID         = "ch.qos.logback"        % "logback-classic"  % V.logback % Runtime
+    val organizeImports: ModuleID = "com.github.liancheng" %% "organize-imports" % V.organizeImports
+
+    val catsLaws         = "org.typelevel"       %% "cats-laws"         % V.catsCore
+    val log4catsNoOp     = "org.typelevel"       %% "log4cats-noop"     % V.log4cats
+    val weaverCats       = "com.disneystreaming" %% "weaver-cats"       % V.weaver
+    val weaverDiscipline = "com.disneystreaming" %% "weaver-discipline" % V.weaver
+    val weaverScalaCheck = "com.disneystreaming" %% "weaver-scalacheck" % V.weaver
   }
 
   object CompilerPlugin {
 
-    val betterMonadicFor = compilerPlugin(
+    val betterMonadicFor: ModuleID = compilerPlugin(
       "com.olegpy" %% "better-monadic-for" % V.betterMonadicFor
     )
 
-    val kindProjector = compilerPlugin(
+    val kindProjector: ModuleID = compilerPlugin(
       "org.typelevel" % "kind-projector" % V.kindProjector cross CrossVersion.full
     )
 
-    val semanticDB = compilerPlugin(
+    val semanticDB: ModuleID = compilerPlugin(
       "org.scalameta" % "semanticdb-scalac" % V.semanticDB cross CrossVersion.full
     )
 

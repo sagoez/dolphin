@@ -24,7 +24,7 @@ object Trace {
 
       override def error(
         cause: Throwable,
-        message: Option[String],
+        message: Option[String]
       ): F[Unit] = Logger[F].error(PrettyPrinter.beautify(cause, message))
 
     }

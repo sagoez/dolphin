@@ -30,7 +30,7 @@ private[dolphin] object Session {
 
   private def eventData[F[_]: Applicative: FlatMap](
     event: EventWithMetadata,
-    `type`: String,
+    `type`: String
   ) = UUID.randomUUID().pure[F].flatMap { uuid =>
     EventData
       .builderAsBinary(uuid, `type`, event._1)
@@ -41,7 +41,7 @@ private[dolphin] object Session {
 
   private def eventData[F[_]: Applicative: FlatMap](
     events: List[EventWithMetadata],
-    `type`: String,
+    `type`: String
   ) = UUID.randomUUID().pure[F].flatMap { uuid =>
     events
       .map { event =>
@@ -80,7 +80,7 @@ private[dolphin] object Session {
         def write(
           stream: String,
           event: EventWithMetadata,
-          `type`: String,
+          `type`: String
         ): F[WriteResult[F]] = eventData(event, `type`).flatMap { event =>
           client
             .appendToStream(stream, event)
@@ -92,7 +92,7 @@ private[dolphin] object Session {
           stream: String,
           options: WriteOptions,
           event: EventWithMetadata,
-          `type`: String,
+          `type`: String
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
@@ -108,7 +108,7 @@ private[dolphin] object Session {
           stream: String,
           options: WriteOptions,
           events: List[EventWithMetadata],
-          `type`: String,
+          `type`: String
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
@@ -123,12 +123,12 @@ private[dolphin] object Session {
         def write(
           stream: String,
           events: List[EventWithMetadata],
-          `type`: String,
+          `type`: String
         ): F[WriteResult[F]] = eventData(events, `type`).flatMap { events =>
           client
             .appendToStream(
               stream,
-              events,
+              events
             )
             .toSafeAttempt
 
@@ -136,7 +136,7 @@ private[dolphin] object Session {
 
         def read(
           stream: String,
-          options: ReadOptions,
+          options: ReadOptions
         ): F[ReadResult[F]] =
           options.get match {
             case Failure(exception) =>
@@ -148,7 +148,7 @@ private[dolphin] object Session {
 
         def subscribeToStream(
           stream: String,
-          options: SubscriptionOptions,
+          options: SubscriptionOptions
         ): Stream[F, Either[Throwable, Event]] =
           options.get match {
             case Failure(exception) =>

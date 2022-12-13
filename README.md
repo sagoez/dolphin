@@ -10,7 +10,7 @@ This project is a little playground for me to learn more about EventStoreDB and 
 - [x] Figure out what to do with some result data types like Position, ExpectedVersion
 - [x] [Write a simple application that uses this wrapper](https://github.com/samgj18/event-sourcing-poc/tree/main)
 - [x] Keep the wrapper up to date with the latest version of the Java client
-- [ ] Write tests for the application
+- [ ] Write tests for Client, Session, StoreSession and Trace
 - [ ] Write documentation on how to use the wrapper
 - [ ] Write all the missing data types and methods in the wrapper (e.g. projections, subscriptions etc.)
 - [ ] Revisit design decisions and refactor if needed as keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
