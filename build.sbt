@@ -77,6 +77,7 @@ lazy val core = project
       Libraries.fs2Core,
       Libraries.log4cats,
       Libraries.logback,
+      Libraries.sourceCode,
     ),
   )
 

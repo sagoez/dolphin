@@ -6,6 +6,8 @@ package dolphin.event
 
 import java.util.concurrent.CompletableFuture
 
+import dolphin.util.Trace
+
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
@@ -38,15 +40,18 @@ private[dolphin] object DeleteResult {
   def fromEventReadResult[F[_]: Async](result: EventStoreDeleteResult): DeleteResult[F] =
     new DeleteResult[F](CompletableFuture.completedFuture(result)) {}
 
-  implicit class DeleteResultOps[F[_]: Async: Logger](val writeResult: CompletableFuture[EventStoreDeleteResult]) {
+  implicit class DeleteResultOps[F[_]: Async: Logger: Trace](
+    val writeResult: CompletableFuture[EventStoreDeleteResult]
+  ) {
 
     import cats.syntax.applicativeError.*
     import cats.syntax.flatMap.*
     import cats.syntax.apply.*
 
     def toSafeAttempt: F[DeleteResult[F]] = Async[F].fromCompletableFuture(writeResult.pure[F]).attempt.flatMap {
-      case Left(error)   => Logger[F].error(error)("Failed to delete from EventStore") *> Async[F].raiseError(error)
-      case Right(result) => DeleteResult.fromEventReadResult(result).pure[F]
+      case Left(exception) =>
+        Trace[F].error(exception, Some("Failed to delete from EventStore")) *> Async[F].raiseError(exception)
+      case Right(result)   => DeleteResult.fromEventReadResult(result).pure[F]
     }
   }
 

@@ -33,6 +33,7 @@ object Dependencies {
     val fs2Core            = "co.fs2"        %% "fs2-core"       % V.fs2
     val eventStoreDbClient = "com.eventstore" % "db-client-java" % V.eventStoreDbClient
     val scodecBits         = "org.scodec"    %% "scodec-bits"    % V.scodecBits
+    val sourceCode         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
 
     val log4cats        = "org.typelevel"        %% "log4cats-slf4j"   % V.log4cats
     val logback         = "ch.qos.logback"        % "logback-classic"  % V.logback

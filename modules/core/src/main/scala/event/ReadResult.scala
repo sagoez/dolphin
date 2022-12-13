@@ -11,6 +11,8 @@ import java.util.concurrent.CompletableFuture
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
+import dolphin.util.Trace
+
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
@@ -79,7 +81,7 @@ sealed abstract case class ReadResult[F[_]: Async] private (
     * @return
     *   None if reading from a regular stream.
     */
-  def getLastAllStreamPosition: F[Option[Position]] = get.map(value => Try(value.getLastAllStreamPosition()).toOption)
+  def getLastAllStreamPosition: F[Option[Position]] = get.map(value => Try(value.getLastAllStreamPosition).toOption)
 
 }
 
@@ -91,15 +93,16 @@ private[dolphin] object ReadResult {
   def fromEventReadResult[F[_]: Async](result: EventStoreReadResult): ReadResult[F] =
     new ReadResult[F](CompletableFuture.completedFuture(result)) {}
 
-  implicit class ReadResultOps[F[_]: Async: Logger](val writeResult: CompletableFuture[EventStoreReadResult]) {
+  implicit class ReadResultOps[F[_]: Async: Logger: Trace](val writeResult: CompletableFuture[EventStoreReadResult]) {
 
     import cats.syntax.applicativeError.*
     import cats.syntax.flatMap.*
     import cats.syntax.apply.*
 
     def toSafeAttempt: F[ReadResult[F]] = Async[F].fromCompletableFuture(writeResult.pure[F]).attempt.flatMap {
-      case Left(error)   => Logger[F].error(error)("Failed to read from EventStore") *> Async[F].raiseError(error)
-      case Right(result) => ReadResult.fromEventReadResult(result).pure[F]
+      case Left(exception) =>
+        Trace[F].error(exception, Some("Failed to read from EventStore")) *> Async[F].raiseError(exception)
+      case Right(result)   => ReadResult.fromEventReadResult(result).pure[F]
     }
   }
 

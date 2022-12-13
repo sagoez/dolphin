@@ -15,6 +15,7 @@ import dolphin.event.ReadResult.ReadResultOps
 import dolphin.event.WriteResult.WriteResultOps
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
 import dolphin.option.*
+import dolphin.util.Trace
 import dolphin.{Event, EventWithMetadata, StoreSession}
 
 import cats.effect.kernel.{Async, Resource}
@@ -25,7 +26,6 @@ import fs2.Stream
 import org.typelevel.log4cats.Logger
 
 // TODO: Write pretty printer for the errors so users can see what went wrong in a very VERY easy way
-// TODO: Add metadata to the write methods
 private[dolphin] object Session {
 
   private def eventData[F[_]: Applicative: FlatMap](
@@ -55,7 +55,9 @@ private[dolphin] object Session {
       .pure[F]
   }
 
-  def fromClientResource[F[_]: Async: Logger](client: EventStoreDBClient): Resource[F, StoreSession[F]] =
+  def fromClientResource[F[_]: Async: Logger: Trace](
+    client: EventStoreDBClient
+  ): Resource[F, StoreSession[F]] =
     Resource.make {
       new StoreSession[F] {
         def shutdown: F[Unit] = Async[F].delay(client.shutdown())
@@ -68,7 +70,7 @@ private[dolphin] object Session {
         def delete(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get delete options: $exception") *> Async[F].raiseError(exception)
+              Trace[F].error(exception, Some("Failed to get delete options")) *> Async[F].raiseError(exception)
             case Success(options)   =>
               client
                 .deleteStream(streamAggregateId, options)
@@ -94,7 +96,7 @@ private[dolphin] object Session {
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get write options: $exception") *> Async[F].raiseError(exception)
+              Trace[F].error(exception, Some("Failed to get write options")) *> Async[F].raiseError(exception)
             case Success(options)   =>
               eventData(event, `type`).flatMap { events =>
                 client.appendToStream(stream, options, events).toSafeAttempt
@@ -110,7 +112,7 @@ private[dolphin] object Session {
         ): F[WriteResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get write options: $exception") *> Async[F].raiseError(exception)
+              Trace[F].error(exception, Some("Failed to get write options")) *> Async[F].raiseError(exception)
             case Success(options)   =>
               eventData(events, `type`).flatMap { events =>
                 client.appendToStream(stream, options, events).toSafeAttempt
@@ -138,8 +140,7 @@ private[dolphin] object Session {
         ): F[ReadResult[F]] =
           options.get match {
             case Failure(exception) =>
-              Logger[F].error(exception)(s"Failed to get read options: $exception") >> Async[F]
-                .raiseError[ReadResult[F]](exception)
+              Trace[F].error(exception, Some("Failed to get read options")) *> Async[F].raiseError(exception)
             case Success(options)   => client.readStream(stream, options).toSafeAttempt
           }
 
@@ -151,7 +152,9 @@ private[dolphin] object Session {
         ): Stream[F, Either[Throwable, Event]] =
           options.get match {
             case Failure(exception) =>
-              Stream.eval(Logger[F].error(exception)(s"Failed to get subscription options: $exception")) >> Stream
+              Stream.eval(
+                Trace[F].error(exception, Some("Failed to get subscription options"))
+              ) >> Stream
                 .raiseError(
                   exception
                 )
@@ -167,10 +170,35 @@ private[dolphin] object Session {
                 }
           }
 
+        def subscribeToStream(stream: String): Stream[F, Either[Throwable, Event]] = {
+          val listener = SubscriptionListener.default[F]
+          Stream
+            .eval(
+              Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.underlying).pure[F])
+            )
+            .flatMap { _ =>
+              listener.subscription
+            }
+        }
+
+        def tombstoneStream(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]] =
+          options.get match {
+            case Failure(exception) =>
+              Trace[F].error(exception, Some("Failed to get delete options")) *> Async[F].raiseError(exception)
+            case Success(options)   =>
+              client
+                .tombstoneStream(streamAggregateId, options)
+                .toSafeAttempt
+          }
+
+        def tombstoneStream(streamAggregateId: String): F[DeleteResult[F]] =
+          client
+            .tombstoneStream(streamAggregateId)
+            .toSafeAttempt
       }.pure[F]
     }(_.shutdown)
 
-  def fromClientStream[F[_]: Async: Logger](
+  def fromClientStream[F[_]: Async: Logger: Trace](
     client: EventStoreDBClient
   ): Stream[F, StoreSession[F]] = Stream.resource(fromClientResource(client))
 }

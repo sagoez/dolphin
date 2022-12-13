@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture
 
 import dolphin.concurrent.ExpectedRevision
 import dolphin.concurrent.ExpectedRevision.DbClientExpectedRevisionOps
+import dolphin.util.Trace
 
 import cats.effect.kernel.Async
 import cats.syntax.applicative.*
@@ -49,15 +50,16 @@ private[dolphin] object WriteResult {
   def fromEventWriteResult[F[_]: Async](result: EventStoreWriteResult): WriteResult[F] =
     new WriteResult[F](CompletableFuture.completedFuture(result)) {}
 
-  implicit class WriteResultOps[F[_]: Async: Logger](val writeResult: CompletableFuture[EventStoreWriteResult]) {
+  implicit class WriteResultOps[F[_]: Async: Logger: Trace](val writeResult: CompletableFuture[EventStoreWriteResult]) {
 
     import cats.syntax.applicativeError.*
     import cats.syntax.flatMap.*
     import cats.syntax.apply.*
 
     def toSafeAttempt: F[WriteResult[F]] = Async[F].fromCompletableFuture(writeResult.pure[F]).attempt.flatMap {
-      case Left(error)   => Logger[F].error(error)("Failed to read from EventStore") *> Async[F].raiseError(error)
-      case Right(result) => WriteResult.fromEventWriteResult(result).pure[F]
+      case Left(exception) =>
+        Trace[F].error(exception, Some("Failed to write from EventStore")) *> Async[F].raiseError(exception)
+      case Right(result)   => WriteResult.fromEventWriteResult(result).pure[F]
 
     }
   }

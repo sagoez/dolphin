@@ -7,10 +7,12 @@ package dolphin
 import dolphin.client.{Client, Session}
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
 import dolphin.option.*
+import dolphin.util.Trace
 
 import cats.effect.kernel.{Async, Resource}
 import fs2.Stream
 import org.typelevel.log4cats.Logger
+import sourcecode.{File, Line}
 
 trait StoreSession[F[_]] { self =>
 
@@ -84,7 +86,6 @@ trait StoreSession[F[_]] { self =>
     * @return
     *   A ReadResult containing the result of the read. Could fail if the stream does not exist.
     */
-
   def read(
     streamAggregateId: String,
     options: ReadOptions,
@@ -96,15 +97,29 @@ trait StoreSession[F[_]] { self =>
     * @param options
     *   Options to use when subscribing to the stream
     * @return
+    *   A Stream of Either a Throwable or an Event
     */
   def subscribeToStream(
     stream: String,
     options: SubscriptionOptions,
   ): Stream[F, Either[Throwable, Event]]
 
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    *
+    * @param stream
+    *   Aggregate id of the stream to subscribe to
+    * @return
+    *   A Stream of Either a Throwable or an Event
+    */
+  def subscribeToStream(
+    stream: String
+  ): Stream[F, Either[Throwable, Event]]
+
   /** Delete a stream from the EventStoreDB server
     * @param streamAggregateId
     *   The id of the stream aggregate to read from
+    * @return
+    *   A DeleteResult containing the result of the delete
     */
   def delete(streamAggregateId: String): F[DeleteResult[F]]
 
@@ -113,9 +128,30 @@ trait StoreSession[F[_]] { self =>
     *   The id of the stream aggregate to read from
     * @param options
     *   The options to use when deleting the stream
+    * @return
+    *   A DeleteResult containing the result of the delete
     */
   def delete(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]]
 
+  /** Tombstones a given stream.
+    *
+    * @param streamAggregateId
+    *   The id of the stream aggregate to tombstone
+    * @param options
+    *   The options to use when deleting the stream
+    * @return
+    *   A DeleteResult containing the result of the delete
+    */
+  def tombstoneStream(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]]
+
+  /** Tombstones a given stream.
+    *
+    * @param streamAggregateId
+    *   The id of the stream aggregate to tombstone
+    * @return
+    *   A DeleteResult containing the result of the delete
+    */
+  def tombstoneStream(streamAggregateId: String): F[DeleteResult[F]]
 }
 
 object StoreSession {
@@ -137,8 +173,12 @@ object StoreSession {
     host: String,
     port: Int,
     tls: Boolean,
+  )(
+    implicit line: Line,
+    file: File,
   ): Resource[F, StoreSession[F]] =
     for {
+      case implicit0(trace: Trace[F]) <- Resource.pure(Trace.instance[F])
       client  <- Client.makeResource[F](host, port, tls)
       session <- Session.fromClientResource[F](client)
     } yield session
@@ -159,8 +199,12 @@ object StoreSession {
     host: String,
     port: Int,
     tls: Boolean,
+  )(
+    implicit line: Line,
+    file: File,
   ): Stream[F, StoreSession[F]] =
     for {
+      case implicit0(trace: Trace[F]) <- Stream.emit(Trace.instance[F])
       client  <- Client.makeStream[F](host, port, tls)
       session <- Session.fromClientStream[F](client)
     } yield session
