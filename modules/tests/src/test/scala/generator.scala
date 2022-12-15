@@ -4,16 +4,16 @@
 
 package com.eventstore.dbclient
 
-import com.eventstore.dbclient.proto.streams.StreamsOuterClass
-import com.eventstore.dbclient.{Checkpointer, Position, ResolvedEvent, Subscription}
-import io.grpc.stub.ClientCallStreamObserver
-
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
+import com.eventstore.dbclient.*
+import com.eventstore.dbclient.proto.streams.StreamsOuterClass
+import io.grpc.stub.ClientCallStreamObserver
+
 object generator {
   val uuid: UUID                = java.util.UUID.randomUUID()
-  val eventData: Array[Byte]    = Array[Byte](1, 2, 3, 4, 5)
+  val eventData: Array[Byte]    = """{"test": "test"}""".getBytes()
   val userMetadata: Array[Byte] = Array.emptyByteArray
   val position: Position        = new Position(0L, 0L)
 

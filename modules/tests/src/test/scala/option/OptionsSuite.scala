@@ -2,12 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.option
-
-import weaver.FunSuite
-import com.eventstore.dbclient.{AppendToStreamOptions, DeleteStreamOptions, ReadStreamOptions, SubscribeToStreamOptions}
+package dolphin.option.tests
 
 import scala.util.Try
+
+import dolphin.option.*
+
+import com.eventstore.dbclient.*
+import weaver.FunSuite
 
 object OptionsSuite extends FunSuite {
   test("Delete options should return Java DeleteStreamOptions") {

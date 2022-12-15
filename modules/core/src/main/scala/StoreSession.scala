@@ -5,6 +5,7 @@
 package dolphin
 
 import dolphin.client.{Client, Session}
+import dolphin.concurrent.SubscriptionListener.{WithFuture, WithStream}
 import dolphin.event.{DeleteResult, ReadResult, WriteResult}
 import dolphin.option.*
 import dolphin.util.Trace
@@ -101,7 +102,35 @@ trait StoreSession[F[_]] { self =>
     */
   def subscribeToStream(
     stream: String,
+    listener: WithStream[F],
     options: SubscriptionOptions
+  ): Stream[F, Either[Throwable, Event]]
+
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    *
+    * @param stream
+    *   Aggregate id of the stream to subscribe to
+    * @param options
+    *   Options to use when subscribing to the stream
+    * @return
+    *   A Stream of Either a Throwable or an Event
+    */
+  def subscribeToStream(
+    stream: String,
+    listener: WithFuture[F],
+    options: SubscriptionOptions
+  ): Stream[F, Unit]
+
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    *
+    * @param stream
+    *   Aggregate id of the stream to subscribe to
+    * @return
+    *   A Stream of Either a Throwable or an Event
+    */
+  def subscribeToStream(
+    stream: String,
+    listener: WithStream[F]
   ): Stream[F, Either[Throwable, Event]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -112,8 +141,9 @@ trait StoreSession[F[_]] { self =>
     *   A Stream of Either a Throwable or an Event
     */
   def subscribeToStream(
-    stream: String
-  ): Stream[F, Either[Throwable, Event]]
+    stream: String,
+    listener: WithFuture[F]
+  ): Stream[F, Unit]
 
   /** Delete a stream from the EventStoreDB server
     * @param streamAggregateId

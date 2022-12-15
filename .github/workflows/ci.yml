@@ -66,6 +66,12 @@ jobs:
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
+      - name: Starting up EventStoreDB 🐳
+        run: docker-compose up -d
+
+      - name: Integration tests 🧪
+        run: sbt 'project ${{ matrix.project }}' '++ ${{ matrix.scala }}' it
+
       - name: Check that workflows are up to date
         run: sbt githubWorkflowCheck
 
@@ -83,6 +89,9 @@ jobs:
       - name: Generate API documentation
         if: matrix.java == 'temurin@17'
         run: sbt 'project ${{ matrix.project }}' '++ ${{ matrix.scala }}' doc
+
+      - name: Stopping EventStoreDB 🐳
+        run: docker-compose down
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')

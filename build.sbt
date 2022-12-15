@@ -40,6 +40,28 @@ lazy val commonSettings = Seq(
   scalafmtOnCompile := true
 )
 
+ThisBuild / githubWorkflowBuildPreamble ++=
+  List(
+    // Docker compose up
+    WorkflowStep.Run(
+      List(
+        "docker-compose up -d"
+      ),
+      name = Some("Starting up EventStoreDB 🐳")
+    ),
+    WorkflowStep.Sbt(List("it"), name = Some("Integration tests 🧪"))
+  )
+
+ThisBuild / githubWorkflowBuildPostamble ++= List(
+  // Docker compose down
+  WorkflowStep.Run(
+    List(
+      "docker-compose down"
+    ),
+    name = Some("Stopping EventStoreDB 🐳")
+  )
+)
+
 lazy val dolphin = tlCrossRootProject
   .settings(commonSettings)
   .aggregate(core, circe, tests)
@@ -84,6 +106,7 @@ lazy val core = project
 
 lazy val tests = project
   .in(file("modules/tests"))
+  .configs(IntegrationTest)
   .settings(commonSettings)
   .dependsOn(core, circe)
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
@@ -96,6 +119,7 @@ lazy val tests = project
       Libraries.weaverDiscipline,
       Libraries.weaverScalaCheck
     ),
+    Defaults.itSettings,
     testFrameworks += new TestFramework("weaver.framework.CatsEffect")
   )
 
@@ -104,3 +128,4 @@ addCommandAlias(
   "build",
   "clean; all scalafmtCheckAll scalafmtSbtCheck compile test doc"
 )
+addCommandAlias("it", "clean; all scalafmtCheckAll scalafmtSbtCheck it:compile it:test")

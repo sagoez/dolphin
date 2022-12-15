@@ -2,12 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.concurrent
+package dolphin.concurrent.tests
 
 import dolphin.concurrent.ExpectedRevision
 import dolphin.concurrent.ExpectedRevision.*
-import weaver.FunSuite
+
 import com.eventstore.dbclient
+import weaver.FunSuite
 
 object ExpectedRevisionSuite extends FunSuite {
 

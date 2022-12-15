@@ -9,7 +9,7 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success}
 
-import dolphin.concurrent.SubscriptionListener
+import dolphin.concurrent.SubscriptionListener.{WithFuture, WithStream}
 import dolphin.event.DeleteResult.DeleteResultOps
 import dolphin.event.ReadResult.ReadResultOps
 import dolphin.event.WriteResult.WriteResultOps
@@ -148,6 +148,7 @@ private[dolphin] object Session {
 
         def subscribeToStream(
           stream: String,
+          listener: WithStream[F],
           options: SubscriptionOptions
         ): Stream[F, Either[Throwable, Event]] =
           options.get match {
@@ -160,26 +161,58 @@ private[dolphin] object Session {
                 )
 
             case Success(options) =>
-              val listener = SubscriptionListener.default[F]
               Stream
                 .eval(
-                  Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.underlying, options).pure[F])
+                  Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.java, options).pure[F])
                 )
                 .flatMap { _ =>
                   listener.subscription
                 }
           }
 
-        def subscribeToStream(stream: String): Stream[F, Either[Throwable, Event]] = {
-          val listener = SubscriptionListener.default[F]
+        def subscribeToStream(
+          stream: String,
+          listener: WithFuture[F],
+          options: SubscriptionOptions
+        ): Stream[F, Unit] =
+          options.get match {
+            case Failure(exception) =>
+              Stream.eval(
+                Trace[F].error(exception, Some("Failed to get subscription options"))
+              ) >> Stream
+                .raiseError(
+                  exception
+                )
+
+            case Success(options) =>
+              Stream
+                .eval(
+                  Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.java, options).pure[F])
+                )
+                .void
+
+          }
+
+        def subscribeToStream(
+          stream: String,
+          listener: WithStream[F]
+        ): Stream[F, Either[Throwable, Event]] = Stream
+          .eval(
+            Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.java).pure[F])
+          )
+          .flatMap { _ =>
+            listener.subscription
+          }
+
+        def subscribeToStream(
+          stream: String,
+          listener: WithFuture[F]
+        ): Stream[F, Unit] =
           Stream
             .eval(
-              Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.underlying).pure[F])
+              Async[F].fromCompletableFuture(client.subscribeToStream(stream, listener.java).pure[F])
             )
-            .flatMap { _ =>
-              listener.subscription
-            }
-        }
+            .void
 
         def tombstoneStream(streamAggregateId: String, options: DeleteOptions): F[DeleteResult[F]] =
           options.get match {
