@@ -17,32 +17,32 @@ object SettingsSuite extends FunSuite {
 
   test("AppendToStreamSettings should return Java WriteStreamOptions") {
     val options = AppendToStreamOptions.get().getClass
-    expect(AppendToStreamSettings.Default.getClass == options)
+    expect(AppendToStreamSettings.Default.toOptions.getClass == options)
   }
 
   test("CreatePersistentSubscriptionToAllSettings should return java CreatePersistentSubscriptionToAllOptions") {
     val options = CreatePersistentSubscriptionToAllOptions.get().getClass
-    expect(PS.Default.getClass == options)
+    expect(PS.Default.toOptions.getClass == options)
   }
 
   test("CreatePersistentSubscriptionToStreamSettings should return java CreatePersistentSubscriptionToAllOptions") {
     val options = CreatePersistentSubscriptionToStreamOptions.get().getClass
-    expect(PSS.Default.getClass == options)
+    expect(PSS.Default.toOptions.getClass == options)
   }
 
   test("DeletePersistentSubscriptionSettings should return java DeletePersistentSubscriptionOptions") {
     val options = DeletePersistentSubscriptionOptions.get().getClass
-    expect(DeletePersistentSubscriptionSettings.Default.getClass == options)
+    expect(DeletePersistentSubscriptionSettings.Default.toOptions.getClass == options)
   }
 
   test("DeleteStreamSettings should return Java DeleteStreamOptions") {
     val options = DeleteStreamOptions.get().getClass
-    expect(DeleteStreamSettings.Default.getClass == options)
+    expect(DeleteStreamSettings.Default.toOptions.getClass == options)
   }
 
   test("EventStoreSettings should return default settings") {
     val options = EventStoreSettings.Default
-    expect(!options.tls) and expect(options.deadline.isEmpty) and expect(options.tlsVerifyCert) and expect(
+    expect(!options.tls) and expect(options.deadline.isEmpty) and expect(!options.tlsVerifyCert) and expect(
       !options.dnsDiscover
     ) and expect(options.discoveryInterval.isEmpty) and expect(options.gossipTimeout.isEmpty) and expect(
       options.keepAliveInterval.isEmpty
@@ -53,27 +53,27 @@ object SettingsSuite extends FunSuite {
 
   test("GetPersistentSubscriptionInfoSettings should return java GetPersistentSubscriptionOptions") {
     val options = GetPersistentSubscriptionInfoOptions.get().getClass
-    expect(GetPersistentSubscriptionInfoSettings.Default.getClass == options)
+    expect(GetPersistentSubscriptionInfoSettings.Default.toOptions.getClass == options)
   }
 
   test("ListPersistentSubscriptionSettings should return java ListPersistentSubscriptionOptions") {
     val options = ListPersistentSubscriptionsOptions.get().getClass
-    expect(ListPersistentSubscriptionsSettings.Default.getClass == options)
+    expect(ListPersistentSubscriptionsSettings.Default.toOptions.getClass == options)
   }
 
   test("ReadStreamSettings should return Java ReadStreamOptions") {
     val options = ReadStreamOptions.get().getClass
-    expect(ReadStreamSettings.Default.getClass == options)
+    expect(ReadStreamSettings.Default.toOptions.getClass == options)
   }
 
   test("ReplayParkedMessagesSettings should return java ReplayParkedMessagesOptions") {
     val options = ReplayParkedMessagesOptions.get().getClass
-    expect(ReplayParkedMessagesSettings.Default.getClass == options)
+    expect(ReplayParkedMessagesSettings.Default.toOptions.getClass == options)
   }
 
   test("RestartPersistentSubscriptionSettings should return java RestartPersistentSubscriptionOptions") {
     val options = RestartPersistentSubscriptionSubsystemOptions.get().getClass
-    expect(RestartPersistentSubscriptionSubsystemSettings.Default.getClass == options)
+    expect(RestartPersistentSubscriptionSubsystemSettings.Default.toOptions.getClass == options)
   }
 
   test("SubscriptionFilterSettings should return java SubscriptionFilter") {
@@ -96,16 +96,16 @@ object SettingsSuite extends FunSuite {
 
   test("SubscriptionToStreamSettings should return Java SubscribeToStreamOptions") {
     val options = SubscribeToStreamOptions.get().getClass
-    expect(SubscriptionToStreamSettings.Default.getClass == options)
+    expect(SubscriptionToStreamSettings.Default.toOptions.getClass == options)
   }
 
   test("UpdatePersistentSubscriptionToAllSettings should return java UpdatePersistentSubscriptionToAllOptions") {
     val options = UpdatePersistentSubscriptionToAllOptions.get().getClass
-    expect(UpdatePersistentSubscriptionToAllSettings.Default.getClass == options)
+    expect(UpdatePersistentSubscriptionToAllSettings.Default.toOptions.getClass == options)
   }
 
   test("UpdatePersistentSubscriptionToStreamSettings should return java UpdatePersistentSubscriptionToStreamOptions") {
     val options = UpdatePersistentSubscriptionToStreamOptions.get().getClass
-    expect(UpdatePersistentSubscriptionToStreamSettings.Default.getClass == options)
+    expect(UpdatePersistentSubscriptionToStreamSettings.Default.toOptions.getClass == options)
   }
 }

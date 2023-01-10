@@ -153,10 +153,10 @@ private[dolphin] object VolatileSessionBuilder {
         ): Stream[F, Either[Throwable, Event]] = Stream
           .eval(
             FutureLift[F]
-              .futureLift(client.subscribeToStream(stream, listener.java, options.toOptions))
+              .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
           )
           .flatMap { _ =>
-            listener.subscription
+            listener.stream
           }
 
         def subscribeToStream(
@@ -167,7 +167,7 @@ private[dolphin] object VolatileSessionBuilder {
           Stream
             .eval(
               FutureLift[F]
-                .futureLift(client.subscribeToStream(stream, listener.java, options.toOptions))
+                .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
             )
             .void
 
@@ -177,9 +177,9 @@ private[dolphin] object VolatileSessionBuilder {
         ): Stream[F, Either[Throwable, Event]] = Stream
           .eval(
             FutureLift[F]
-              .futureLift(client.subscribeToStream(stream, listener.java))
+              .futureLift(client.subscribeToStream(stream, listener.listener))
           )
-          .flatMap(_ => listener.subscription)
+          .flatMap(_ => listener.stream)
 
         def subscribeToStream(
           stream: String,
@@ -188,7 +188,7 @@ private[dolphin] object VolatileSessionBuilder {
           Stream
             .eval(
               FutureLift[F]
-                .futureLift(client.subscribeToStream(stream, listener.java))
+                .futureLift(client.subscribeToStream(stream, listener.listener))
             )
             .void
 

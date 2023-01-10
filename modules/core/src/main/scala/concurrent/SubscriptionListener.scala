@@ -20,9 +20,9 @@ import com.eventstore.dbclient.{ResolvedEvent, Subscription, SubscriptionListene
 import fs2.{Chunk, Stream}
 
 sealed trait SubscriptionListener[F[_]] extends Product with Serializable {
-  def java: JSubscriptionListener
+  def listener: JSubscriptionListener
 
-  def subscription: Stream[F, Either[Throwable, Event]]
+  def stream: Stream[F, Either[Throwable, Event]]
 }
 
 object SubscriptionListener {
@@ -33,13 +33,12 @@ object SubscriptionListener {
     onErrorF: Throwable => F[Unit],
     onCancelledF: F[Unit]
   )(
-    implicit ec: ExecutionContext
+    implicit ec: ExecutionContext,
+    runtime: IORuntime
   ) extends SubscriptionListener[F] {
 
-    override def java: JSubscriptionListener =
+    override def listener: JSubscriptionListener =
       new JSubscriptionListener {
-
-        implicit val runtime: IORuntime = cats.effect.unsafe.implicits.global
 
         /** Called when EventStoreDB sends an event to the subscription.
           */
@@ -48,18 +47,18 @@ object SubscriptionListener {
           event: ResolvedEvent
         ): Unit = IOFuture[F].convert(onEventF(event)).onComplete {
           case Failure(exception) => onError(subscription, exception)
-          case Success(_)         => Trace[F].trace("onEvent success").toUnit
+          case Success(_)         => Trace[F].trace("Event received").toUnit
         }
 
         /** Called when an exception was raised when processing an event.
           */
         override def onCancelled(subscription: Subscription): Unit = onCancelledF.toFuture.onComplete {
           case Success(_)         => ()
-          case Failure(exception) => Trace[F].error(exception, Some("SubscriptionListener.onCancelled")).toUnit
+          case Failure(exception) => Trace[F].error(exception, Some("Subscription cancelled")).toUnit
         }
 
         override def onConfirmation(subscription: Subscription): Unit = onConfirmationF.toFuture.onComplete {
-          case Failure(exception) => Trace[F].error(exception, Some("onConfirmation")).toUnit
+          case Failure(exception) => Trace[F].error(exception, Some("Subscription confirmation failed")).toUnit
           case Success(_)         => ()
         }
 
@@ -70,18 +69,18 @@ object SubscriptionListener {
           throwable: Throwable
         ): Unit = IOFuture[F].convert(onErrorF(throwable)).onComplete {
           case Success(_)         => ()
-          case Failure(exception) => Trace[F].error(exception, Some("Error while handling error")).toUnit
+          case Failure(exception) => Trace[F].error(exception, Some("Subscription error")).toUnit
         }
       }
 
-    override def subscription: Stream[F, Either[Throwable, Event]] = Stream.empty
+    override def stream: Stream[F, Either[Throwable, Event]] = Stream.empty
   }
 
   final case class WithStream[F[_]: Sync]() extends SubscriptionListener[F] {
 
     private[dolphin] val queue = new ConcurrentLinkedQueue[Either[Throwable, Event]]()
 
-    override def java: JSubscriptionListener =
+    override def listener: JSubscriptionListener =
       new JSubscriptionListener {
 
         /** Called when an exception was raised when processing an event.
@@ -109,7 +108,7 @@ object SubscriptionListener {
 
       }
 
-    def subscription: Stream[F, Either[Throwable, Event]] =
+    def stream: Stream[F, Either[Throwable, Event]] =
       Stream.unfoldChunkEval(()) { _ =>
         Sync[F].delay {
           Option(queue.poll()).map { event =>

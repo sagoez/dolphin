@@ -98,6 +98,8 @@ sealed abstract case class UpdatePersistentSubscriptionToStreamSettings private 
     options.startFrom(revision)
   )
 
+  private[dolphin] def toOptions: UpdatePersistentSubscriptionToStreamOptions = options
+
 }
 
 object UpdatePersistentSubscriptionToStreamSettings {

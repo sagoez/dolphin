@@ -25,7 +25,7 @@ object SubscriptionListenerSuite extends FunSuite {
 
   test("SubscriptionListener underlying should be able to add a Right event to the queue when onEvent is called") {
 
-    streamListener.java.onEvent(generator.subscription, generator.recordedEvent)
+    streamListener.listener.onEvent(generator.subscription, generator.recordedEvent)
 
     expect(
       streamListener.queue.size() == 1 && streamListener.queue.peek() == Right(
@@ -37,7 +37,7 @@ object SubscriptionListenerSuite extends FunSuite {
   test("SubscriptionListener underlying should be able to add a Left event from the queue when onError is called") {
     val exception = new Exception("test exception")
 
-    streamListener.java.onError(generator.subscription, exception)
+    streamListener.listener.onError(generator.subscription, exception)
 
     expect(
       streamListener.queue.size() == 2 && streamListener.queue.poll().map(value => new String(value)) == Right(
@@ -50,7 +50,7 @@ object SubscriptionListenerSuite extends FunSuite {
     "SubscriptionListener underlying should be able to remove all events from the queue when onCancelled is called"
   ) {
 
-    streamListener.java.onCancelled(generator.subscription)
+    streamListener.listener.onCancelled(generator.subscription)
 
     expect(streamListener.queue.size() == 0 && streamListener.queue.isEmpty)
   }
