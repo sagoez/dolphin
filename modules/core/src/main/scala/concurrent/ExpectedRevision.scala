@@ -15,7 +15,7 @@ object ExpectedRevision {
   case object NoStream     extends ExpectedRevision
   case object StreamExists extends ExpectedRevision
 
-  case class Exact(value: Long) extends ExpectedRevision
+  final case class Exact(value: Long) extends ExpectedRevision
 
   private[dolphin] implicit class ExpectedRevisionOps(val self: ExpectedRevision) extends AnyVal {
 

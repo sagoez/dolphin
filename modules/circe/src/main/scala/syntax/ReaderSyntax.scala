@@ -5,9 +5,8 @@
 package dolphin.circe.syntax
 
 import dolphin.circe.domain.ReadDecodeResult
-import dolphin.event.ReadResult
+import dolphin.result.Result.ReadResult
 
-import cats.Functor
 import cats.data.Validated.{Invalid, Valid}
 import fs2.Stream
 import io.circe.Decoder
@@ -17,7 +16,7 @@ object reader extends ReaderSyntax
 
 trait ReaderSyntax {
 
-  implicit class ReaderOps[F[_]: Functor](val reader: ReadResult[F]) {
+  implicit class ReaderOps[F[_]](val reader: ReadResult[F]) {
 
     /** Given a decoder, it will try to decode to a ReadDecodeResult.
       *

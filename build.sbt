@@ -37,7 +37,7 @@ lazy val commonSettings = Seq(
     "-Wconf:cat=unused:error",
     "-deprecation"
   ),
-  scalafmtOnCompile := true
+  scalafmtOnCompile := false
 )
 
 ThisBuild / githubWorkflowBuildPreamble ++=
@@ -99,7 +99,7 @@ lazy val core = project
       Libraries.eventStoreDbClient,
       Libraries.fs2Core,
       Libraries.log4cats,
-      Libraries.logback,
+      Libraries.logback % Runtime,
       Libraries.sourceCode
     )
   )

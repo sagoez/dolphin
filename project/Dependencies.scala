@@ -35,7 +35,7 @@ object Dependencies {
     val sourceCode: ModuleID         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
 
     val log4cats: ModuleID        = "org.typelevel"        %% "log4cats-slf4j"   % V.log4cats
-    val logback: ModuleID         = "ch.qos.logback"        % "logback-classic"  % V.logback % Runtime
+    val logback: ModuleID         = "ch.qos.logback"        % "logback-classic"  % V.logback
     val organizeImports: ModuleID = "com.github.liancheng" %% "organize-imports" % V.organizeImports
 
     val catsLaws         = "org.typelevel"       %% "cats-laws"         % V.catsCore

@@ -1,12 +1,12 @@
+// Copyright (c) 2022 by LapsusHQ
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package dolphin.tests
 
 import org.scalacheck.Gen
 
-import java.util.UUID
-
 object generator {
-  def idGen[A](fa: UUID => A): Gen[A]   = Gen.uuid.map(fa)
-  def nesGen[A](f: String => A): Gen[A] = nonEmptyStringGen.map(f)
 
   val nonEmptyStringGen: Gen[String] = Gen
     .chooseNum(21, 40)

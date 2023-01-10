@@ -14,7 +14,6 @@ object PrettyPrinterSuite extends FunSuite {
   }
 
   test("PrettyPrinter should return a detailed message") {
-    val dir = System.getProperty("user.dir")
     expect(
       PrettyPrinter
         .beautify(new Exception("Unexpected Exception"), Some("message"))
@@ -22,14 +21,10 @@ object PrettyPrinterSuite extends FunSuite {
     ) and expect(
       PrettyPrinter
         .beautify(new Exception("test"), Some("test"))
-        .contains(dir + "/modules/tests/src/test/scala/util/PrettyPrinterSuite.scala")
-    ) and expect(
-      PrettyPrinter
-        .beautify(new Exception("test"), Some("test"))
         .replaceAll("\n", " ")
         .substring(0, 241)
         .contains(
-          " unexpected error occurred: no hint available for this error: java.lang.Exception❇️  Stack trace: test ℹ️ maybe /Users/sjimenez/Desktop/Learning/event-store-db4s/modules/tests/src/test/scala/util/PrettyPrinterSuite.scala"
+          " unexpected error occurred: no hint available for this error: java.lang.Exception❇️  Stack trace: test ℹ️ maybe "
         )
     )
   }

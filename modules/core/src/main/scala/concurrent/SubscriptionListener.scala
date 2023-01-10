@@ -27,7 +27,7 @@ sealed trait SubscriptionListener[F[_]] extends Product with Serializable {
 
 object SubscriptionListener {
 
-  final case class WithFuture[F[_]: IOFuture: Trace](
+  final case class WithHandler[F[_]: IOFuture: Trace](
     onEventF: ResolvedEvent => F[Unit],
     onConfirmationF: F[Unit],
     onErrorF: Throwable => F[Unit],

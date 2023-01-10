@@ -9,11 +9,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
 
-sealed trait IOFuture[F[_]] {
+private[dolphin] object future extends FutureSyntax
+
+private[dolphin] sealed trait IOFuture[F[_]] {
   def convert[A](fa: F[A])(implicit runtime: IORuntime): Future[A]
 }
 
-object IOFuture {
+private[dolphin] object IOFuture {
   def apply[F[_]: IOFuture]: IOFuture[F] = implicitly[IOFuture[F]]
 
   implicit val ioFuture: IOFuture[IO] =
@@ -21,18 +23,21 @@ object IOFuture {
       override def convert[A](fa: IO[A])(implicit runtime: IORuntime): Future[A] = fa.unsafeToFuture()
     }
 
-  implicit class IOFutureOps[F[_]: IOFuture, A](fa: F[A]) {
+  implicit class IOFutureSyntaxOps[F[_]: IOFuture, A](fa: F[A]) {
     def toFuture(implicit runtime: IORuntime): Future[A] = IOFuture[F].convert(fa)
   }
 
 }
 
-trait IOFutureSyntax {
+private[dolphin] trait FutureSyntax {
 
-  implicit class IOFutureOps[F[_]: IOFuture, A](fa: F[A]) {
+  implicit class FutureSyntaxOps[F[_]: IOFuture, A](fa: F[A]) {
     def toFuture(implicit runtime: IORuntime): Future[A] = IOFuture[F].convert(fa)
 
-    def toUnit(implicit ec: ExecutionContext, runtime: IORuntime): Unit = IOFuture[F].convert(fa).onComplete(_ => ())
+    def toUnit(
+      implicit ec: ExecutionContext,
+      runtime: IORuntime
+    ): Unit = IOFuture[F].convert(fa).onComplete(_ => ())
   }
 
   implicit class FutureOps[A](fa: Future[A]) {
@@ -41,5 +46,3 @@ trait IOFutureSyntax {
   }
 
 }
-
-object future extends IOFutureSyntax
