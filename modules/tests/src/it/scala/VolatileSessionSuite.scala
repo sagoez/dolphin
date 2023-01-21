@@ -31,8 +31,8 @@ object VolatileSessionSuite extends IOSuite with Checkers {
                                   "test-data"
                                 )
         nextExpectedRevision <- writeResult.getNextExpectedRevision
-        commitUnsigned       <- writeResult.getCommitUnsigned
-        prepareUnsigned      <- writeResult.getPrepareUnsigned
+        commitUnsigned       <- writeResult.getLogPosition.map(_.commitUnsigned)
+        prepareUnsigned      <- writeResult.getLogPosition.map(_.prepareUnsigned)
       } yield expect(nextExpectedRevision == ExpectedRevision.Exact(0)) and expect(commitUnsigned > 0L) and expect(
         prepareUnsigned > 0L
       )

@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.builder.client
+package dolphin.internal.builder.client
 
-import dolphin.builder.ClientBuilder
+import dolphin.internal.builder.ClientBuilder
 import dolphin.setting.EventStoreSettings
 
 import cats.MonadThrow

@@ -120,10 +120,4 @@ object UpdatePersistentSubscriptionToAllSettings {
   val Default: UpdatePersistentSubscriptionToAllSettings =
     new UpdatePersistentSubscriptionToAllSettings(UpdatePersistentSubscriptionToAllOptions.get()) {}
 
-  /* TODO: Review if this is needed
-   *
-   * def fromPersistentSubscriptionToAllSettings( settings: com.eventstore.dbclient.PersistentSubscriptionToAllSettings
-   * ): UpdatePersistentSubscriptionToAllSettings = new UpdatePersistentSubscriptionToAllSettings(() =>
-   * UpdatePersistentSubscriptionToAllOptions.from(settings)) {}
-   */
 }

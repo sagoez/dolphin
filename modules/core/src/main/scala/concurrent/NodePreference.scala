@@ -12,7 +12,7 @@ object NodePreference {
   case object ReadOnlyLeader extends NodePreference
   case object Any            extends NodePreference
 
-  private[dolphin] implicit class NodePreferenceOps(private val nodePreference: NodePreference) extends AnyVal {
+  final implicit class NodePreferenceOps(private val nodePreference: NodePreference) extends AnyVal {
 
     private[dolphin] def toJava: com.eventstore.dbclient.NodePreference =
       nodePreference match {

@@ -5,21 +5,25 @@
 import dolphin.concurrent.{ConsumerStrategy, NodePreference as DNodePreference}
 
 package object dolphin {
+
   type Event    = Array[Byte]
   type Metadata = Array[Byte]
 
   type CommitUnsigned  = Long
   type PrepareUnsigned = Long
 
-  val Deadline: Long          = 10_000
-  val ReadFromEnd: Boolean    = false
-  val ReadFromStart: Boolean  = true
-  val DiscoveryInterval       = 500
-  val GossipTimeout           = 3000
-  val KeepAliveTimeout: Long  = 10000
-  val KeepAliveInterval: Long = 10000
-  val MaxDiscoverAttempts     = 3
-  val NodePreference          = DNodePreference.Leader
+  type SubscriptionId = String
+
+  val Deadline: Long                  = 10_000
+  val ReadFromEnd: Boolean            = false
+  val ReadFromStart: Boolean          = true
+  val DiscoveryInterval               = 500
+  val GossipTimeout                   = 3000
+  val KeepAliveTimeout: Long          = 10000
+  // In case of persistent subscription you can set KeepAliveTimeout to -1 to disable it completely.
+  val KeepAliveInterval: Long         = 10000
+  val MaxDiscoverAttempts             = 3
+  val NodePreference: DNodePreference = DNodePreference.Leader
 
   val ExtraStatistics: Boolean  = false
   val IsLeaderRequired: Boolean = true

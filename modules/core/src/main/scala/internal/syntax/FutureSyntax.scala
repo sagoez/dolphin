@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.syntax
+package dolphin.internal.syntax
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,7 +12,7 @@ import cats.effect.unsafe.IORuntime
 private[dolphin] object future extends FutureSyntax
 
 private[dolphin] sealed trait IOFuture[F[_]] {
-  def convert[A](fa: F[A])(implicit runtime: IORuntime): Future[A]
+  def convert[A](fa: => F[A])(implicit runtime: IORuntime): Future[A]
 }
 
 private[dolphin] object IOFuture {
@@ -20,29 +20,20 @@ private[dolphin] object IOFuture {
 
   implicit val ioFuture: IOFuture[IO] =
     new IOFuture[IO] {
-      override def convert[A](fa: IO[A])(implicit runtime: IORuntime): Future[A] = fa.unsafeToFuture()
+      override def convert[A](fa: => IO[A])(implicit runtime: IORuntime): Future[A] = fa.unsafeToFuture()
     }
-
-  implicit class IOFutureSyntaxOps[F[_]: IOFuture, A](fa: F[A]) {
-    def toFuture(implicit runtime: IORuntime): Future[A] = IOFuture[F].convert(fa)
-  }
 
 }
 
 private[dolphin] trait FutureSyntax {
 
-  implicit class FutureSyntaxOps[F[_]: IOFuture, A](fa: F[A]) {
+  implicit class FutureSyntaxOps[F[_]: IOFuture, A](val fa: F[A]) {
     def toFuture(implicit runtime: IORuntime): Future[A] = IOFuture[F].convert(fa)
 
     def toUnit(
       implicit ec: ExecutionContext,
       runtime: IORuntime
     ): Unit = IOFuture[F].convert(fa).onComplete(_ => ())
-  }
-
-  implicit class FutureOps[A](fa: Future[A]) {
-    def toIO: IO[A] = IO.fromFuture(IO(fa))
-
   }
 
 }

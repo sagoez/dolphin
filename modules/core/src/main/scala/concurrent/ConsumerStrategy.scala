@@ -11,7 +11,7 @@ object ConsumerStrategy {
   case object RoundRobin       extends ConsumerStrategy
   case object Pinned           extends ConsumerStrategy
 
-  private[dolphin] implicit class ConsumerStrategyOps(val self: ConsumerStrategy) extends AnyVal {
+  final implicit class ConsumerStrategyOps(val self: ConsumerStrategy) extends AnyVal {
 
     def toJava: com.eventstore.dbclient.NamedConsumerStrategy =
       self match {
@@ -21,10 +21,10 @@ object ConsumerStrategy {
       }
   }
 
-  private[dolphin] implicit class NamedConsumerStrategyOps(val strategy: com.eventstore.dbclient.NamedConsumerStrategy)
+  final implicit class NamedConsumerStrategyOps(val strategy: com.eventstore.dbclient.NamedConsumerStrategy)
     extends AnyVal {
 
-    def fromJava: ConsumerStrategy =
+    def toScala: ConsumerStrategy =
       if (strategy.isPinned)
         Pinned
       else if (strategy.isRoundRobin)

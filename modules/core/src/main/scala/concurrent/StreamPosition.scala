@@ -14,9 +14,9 @@ object StreamPosition {
 
   final case class Exact[A](value: A) extends StreamPosition[A]
 
-  implicit final class StreamPositionOps[A](private val self: StreamPosition[A]) extends AnyVal {
+  final implicit class StreamPositionOps[A](private val self: StreamPosition[A]) extends AnyVal {
 
-    def toJava: com.eventstore.dbclient.StreamPosition[A] =
+    private[dolphin] def toJava: com.eventstore.dbclient.StreamPosition[A] =
       self match {
         case Start           => com.eventstore.dbclient.StreamPosition.start()
         case End             => com.eventstore.dbclient.StreamPosition.end()
@@ -24,10 +24,10 @@ object StreamPosition {
       }
   }
 
-  implicit final class StreamPositionJavaOps[A](private val self: com.eventstore.dbclient.StreamPosition[A])
+  final implicit class StreamPositionJavaOps[A](private val self: com.eventstore.dbclient.StreamPosition[A])
     extends AnyVal {
 
-    def toScala: StreamPosition[A] =
+    private[dolphin] def toScala: StreamPosition[A] =
       if (self.isStart)
         Start
       else if (self.isEnd)

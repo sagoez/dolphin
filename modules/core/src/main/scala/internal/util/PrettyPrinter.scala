@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.util
+package dolphin.internal.util
 
 import com.eventstore.dbclient.*
 import sourcecode.{File, Line}
 
-private[util] object PrettyPrinter {
+private[dolphin] object PrettyPrinter {
 
   def beautify(error: Throwable, msg: Option[String] = None)(implicit line: Line, file: File): String = {
     val message  = Option(error.getMessage).getOrElse(error.getClass.getSimpleName)
