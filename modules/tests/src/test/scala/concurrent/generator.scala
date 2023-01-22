@@ -6,6 +6,7 @@ package com.eventstore.dbclient
 
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+
 import com.eventstore.dbclient.*
 import com.eventstore.dbclient.proto.persistentsubscriptions.Persistent
 import com.eventstore.dbclient.proto.streams.StreamsOuterClass

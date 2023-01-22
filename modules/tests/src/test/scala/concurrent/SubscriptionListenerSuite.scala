@@ -6,6 +6,7 @@ package dolphin.concurrent.tests
 
 import dolphin.concurrent.{PersistentSubscriptionListener, VolatileSubscriptionListener}
 import dolphin.outcome.ResolvedEventOutcome
+
 import cats.effect.IO
 import com.eventstore.dbclient.generator
 import weaver.FunSuite
@@ -59,7 +60,9 @@ object SubscriptionListenerSuite extends FunSuite {
 
     import cats.effect.unsafe.implicits.global
 
-    persistentSubscriptionListener.listener.onEvent(generator.persistentSubscription, generator.retryCount, generator.recordedEvent)
+    persistentSubscriptionListener
+      .listener
+      .onEvent(generator.persistentSubscription, generator.retryCount, generator.recordedEvent)
 
     expect(
       persistentSubscriptionListener
