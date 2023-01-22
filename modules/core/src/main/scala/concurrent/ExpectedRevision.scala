@@ -17,7 +17,7 @@ object ExpectedRevision {
 
   final case class Exact(value: Long) extends ExpectedRevision
 
-  private[dolphin] implicit class ExpectedRevisionOps(val self: ExpectedRevision) extends AnyVal {
+  final implicit class ExpectedRevisionOps(val self: ExpectedRevision) extends AnyVal {
 
     private[dolphin] def toJava: dbclient.ExpectedRevision =
       self match {
@@ -28,10 +28,10 @@ object ExpectedRevision {
       }
   }
 
-  private[dolphin] implicit class DbClientExpectedRevisionOps(val rev: dbclient.ExpectedRevision) extends AnyVal {
+  final implicit class DbClientExpectedRevisionOps(val rev: dbclient.ExpectedRevision) extends AnyVal {
 
     // Bit of unsafe code here, but it's the only way (I know) to get the value of the private field
-    private[dolphin] def fromJava: ExpectedRevision =
+    private[dolphin] def toScala: ExpectedRevision =
       if (rev != dbclient.ExpectedRevision.any()) {
         if (rev == dbclient.ExpectedRevision.noStream()) {
           ExpectedRevision.NoStream

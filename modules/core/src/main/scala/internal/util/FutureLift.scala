@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.util
+package dolphin.internal.util
 
 import java.util.concurrent.CompletableFuture
 
@@ -27,7 +27,7 @@ private[dolphin] object FutureLift {
 
     }
 
-  implicit final class FutureLiftOps[F[_]: FutureLift, A](fa: => CompletableFuture[A]) {
+  final implicit class FutureLiftOps[F[_]: FutureLift, A](fa: => CompletableFuture[A]) {
     def futureLift: F[A] = FutureLift[F].futureLift(fa)
   }
 }

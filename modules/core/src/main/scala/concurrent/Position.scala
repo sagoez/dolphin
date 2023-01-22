@@ -10,18 +10,18 @@ final case class Position(commitUnsigned: CommitUnsigned, prepareUnsigned: Prepa
 
 object Position {
 
-  implicit final class PositionOps[A](private val self: Position) extends AnyVal {
+  final implicit class PositionOps[A](private val self: Position) extends AnyVal {
 
-    def toJava: com.eventstore.dbclient.Position =
+    private[dolphin] def toJava: com.eventstore.dbclient.Position =
       new com.eventstore.dbclient.Position(
         self.commitUnsigned,
         self.prepareUnsigned
       )
   }
 
-  implicit final class PositionJavaOps[A](private val self: com.eventstore.dbclient.Position) extends AnyVal {
+  final implicit class PositionJavaOps[A](private val self: com.eventstore.dbclient.Position) extends AnyVal {
 
-    def toScala: Position = Position(
+    private[dolphin] def toScala: Position = Position(
       self.getCommitUnsigned,
       self.getPrepareUnsigned
     )

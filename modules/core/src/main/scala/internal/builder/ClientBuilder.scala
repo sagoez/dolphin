@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.builder
+package dolphin.internal.builder
 
 import dolphin.*
 import dolphin.setting.EventStoreSettings
@@ -14,7 +14,7 @@ import cats.syntax.flatMap.*
 import com.eventstore.dbclient.{Endpoint, EventStoreDBClientSettings}
 import fs2.Stream
 
-private[builder] object ClientBuilder {
+private[internal] object ClientBuilder {
 
   def makeResource[F[_]: MonadThrow, A](
     fa: EventStoreDBClientSettings => A,

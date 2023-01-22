@@ -4,12 +4,13 @@
 
 package dolphin
 
-import dolphin.builder.client.VolatileClientBuilder
-import dolphin.builder.session.VolatileSessionBuilder
-import dolphin.concurrent.SubscriptionListener.{WithHandler, WithStream}
-import dolphin.result.Result.{DeleteResult, ReadResult, WriteResult}
+import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
+import dolphin.internal.builder.client.VolatileClientBuilder
+import dolphin.internal.builder.session.VolatileSessionBuilder
+import dolphin.internal.util.FutureLift
+import dolphin.outcome.{DeleteOutcome, ReadOutcome, ResolvedEventOutcome, WriteOutcome}
 import dolphin.setting.*
-import dolphin.util.{FutureLift, Trace}
+import dolphin.trace.Trace
 
 import cats.effect.kernel.{MonadCancelThrow, Resource}
 import fs2.Stream
@@ -37,7 +38,12 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def appendToStream(streamAggregateId: String, event: Event, metadata: Metadata, `type`: String): F[WriteResult[F]]
+  def appendToStream(
+    streamAggregateId: String,
+    event: Event,
+    metadata: Metadata,
+    `type`: String
+  ): F[WriteOutcome[F]]
 
   /** Appends events to a given stream.
     *
@@ -58,7 +64,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     event: Event,
     metadata: Metadata,
     `type`: String
-  ): F[WriteResult[F]]
+  ): F[WriteOutcome[F]]
 
   /** Appends events to a given stream.
     *
@@ -78,7 +84,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     options: AppendToStreamSettings,
     events: List[(Event, Metadata)],
     `type`: String
-  ): F[WriteResult[F]]
+  ): F[WriteOutcome[F]]
 
   /** Appends events to a given stream.
     *
@@ -91,7 +97,11 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A WriteResult containing the result of the write. Could fail if it fails to write the stream
     */
-  def appendToStream(streamAggregateId: String, events: List[(Event, Metadata)], `type`: String): F[WriteResult[F]]
+  def appendToStream(
+    streamAggregateId: String,
+    events: List[(Event, Metadata)],
+    `type`: String
+  ): F[WriteOutcome[F]]
 
   /** Read events from a stream. The reading can be done forwards and backwards.
     *
@@ -105,7 +115,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def readStream(
     streamAggregateId: String,
     options: ReadStreamSettings
-  ): F[ReadResult[F]]
+  ): F[ReadOutcome[F]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -122,9 +132,9 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStream[F],
+    listener: WithStreamHandler[F],
     options: SubscriptionToStreamSettings
-  ): Stream[F, Either[Throwable, Event]]
+  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -145,7 +155,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     streamAggregateId: String,
     listener: WithHandler[F],
     options: SubscriptionToStreamSettings
-  ): Stream[F, Unit]
+  ): F[Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -160,8 +170,8 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStream[F]
-  ): Stream[F, Either[Throwable, Event]]
+    handler: WithStreamHandler[F]
+  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -178,8 +188,8 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithHandler[F]
-  ): Stream[F, Unit]
+    handler: WithHandler[F]
+  ): F[Unit]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting
@@ -192,7 +202,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String): F[DeleteResult[F]]
+  def deleteStream(streamAggregateId: String): F[DeleteOutcome[F]]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting
@@ -207,7 +217,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteResult[F]]
+  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -220,7 +230,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteResult[F]]
+  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -231,7 +241,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String): F[DeleteResult[F]]
+  def tombstoneStream(streamAggregateId: String): F[DeleteOutcome[F]]
 }
 
 object VolatileSession {

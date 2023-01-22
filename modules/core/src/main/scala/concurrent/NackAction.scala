@@ -21,7 +21,7 @@ object NackAction {
 
   final implicit class NackActionOps(private val action: NackAction) extends AnyVal {
 
-    def toJava: dbclient.NackAction =
+    private[dolphin] def toJava: dbclient.NackAction =
       action match {
         case Park  => dbclient.NackAction.Park
         case Retry => dbclient.NackAction.Retry
@@ -34,7 +34,7 @@ object NackAction {
 
   final implicit class JavaNackActionOps(private val action: dbclient.NackAction) extends AnyVal {
 
-    def toScala: NackAction =
+    private[dolphin] def toScala: NackAction =
       action match {
         case dbclient.NackAction.Park  => Park
         case dbclient.NackAction.Retry => Retry

@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.util.tests
+package dolphin.internal.util.tests
 
-import dolphin.util.PrettyPrinter
+import dolphin.internal.util.PrettyPrinter
 
 import weaver.FunSuite
 
