@@ -170,7 +170,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStreamHandler[F]
+    handler: WithStreamHandler[F]
   ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -188,7 +188,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithHandler[F]
+    handler: WithHandler[F]
   ): F[Unit]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last

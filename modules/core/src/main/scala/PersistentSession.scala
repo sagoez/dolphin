@@ -4,6 +4,7 @@
 
 package dolphin
 
+import dolphin.concurrent.PersistentSubscriptionListener.{WithHandler, WithStreamHandler}
 import dolphin.internal.builder.client.PersistentClientBuilder
 import dolphin.internal.builder.session.PersistentSessionBuilder
 import dolphin.internal.util.FutureLift
@@ -263,6 +264,47 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     subscriptionGroupName: String,
     options: UpdatePersistentSubscriptionToAllSettings
   ): F[Unit]
+
+  /** Updates a persistent subscription group on a stream. */
+  def updateToStream(
+    streamName: String,
+    subscriptionGroupName: String
+  ): F[Unit]
+
+  /** Updates a persistent subscription group on a stream. */
+  def updateToStream(
+    streamName: String,
+    subscriptionGroupName: String,
+    options: UpdatePersistentSubscriptionToStreamSettings
+  ): F[Unit]
+
+  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
+  def subscribeToAll(
+    subscriptionGroupName: String,
+    handler: WithHandler[F]
+  ): F[Unit]
+
+  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
+  def subscribeToAll(
+    subscriptionGroupName: String,
+    options: PersistentSubscriptionSettings,
+    handler: WithHandler[F]
+  ): F[Unit]
+
+  /*Connects to a persistent subscription group on a stream. */
+  def subscribeToStream(
+    streamName: String,
+    subscriptionGroupName: String,
+    handler: WithStreamHandler[F]
+  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
+
+  /*Connects to a persistent subscription group on a stream. */
+  def subscribeToStream(
+    streamName: String,
+    subscriptionGroupName: String,
+    options: PersistentSubscriptionSettings,
+    handler: WithStreamHandler[F]
+  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 }
 
 object PersistentSession {

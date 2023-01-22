@@ -21,7 +21,7 @@ import cats.effect.MonadCancelThrow
 import cats.effect.kernel.Resource
 import cats.syntax.all.*
 import cats.{Applicative, FlatMap}
-import com.eventstore.dbclient.{EventData => JEventData, EventStoreDBClient}
+import com.eventstore.dbclient.{EventData as JEventData, EventStoreDBClient}
 import fs2.Stream
 import sourcecode.{File, Line}
 
@@ -70,17 +70,11 @@ private[dolphin] object VolatileSessionBuilder {
         def shutdown: F[Unit] = FutureLift[F].delay(client.shutdown())
 
         def deleteStream(streamAggregateId: String): F[DeleteOutcome[F]] = FutureLift[F]
-          .futureLift(
-            client
-              .deleteStream(streamAggregateId)
-          )
+          .futureLift(client.deleteStream(streamAggregateId))
           .withTraceAndTransformer(DeleteOutcome.make(_))
 
         def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]] = FutureLift[F]
-          .futureLift(
-            client
-              .deleteStream(streamAggregateId, options.toOptions)
-          )
+          .futureLift(client.deleteStream(streamAggregateId, options.toOptions))
           .withTraceAndTransformer(DeleteOutcome.make(_))
 
         def appendToStream(
@@ -90,10 +84,7 @@ private[dolphin] object VolatileSessionBuilder {
           `type`: String
         ): F[WriteOutcome[F]] = eventData(event, metadata, `type`).flatMap { event =>
           FutureLift[F]
-            .futureLift(
-              client
-                .appendToStream(stream, event)
-            )
+            .futureLift(client.appendToStream(stream, event))
             .withTraceAndTransformer(WriteOutcome.make(_))
 
         }
@@ -127,13 +118,7 @@ private[dolphin] object VolatileSessionBuilder {
           `type`: String
         ): F[WriteOutcome[F]] = eventData(events, `type`).flatMap { events =>
           FutureLift[F]
-            .futureLift(
-              client
-                .appendToStream(
-                  stream,
-                  events
-                )
-            )
+            .futureLift(client.appendToStream(stream, events))
             .withTraceAndTransformer(WriteOutcome.make(_))
 
         }
@@ -142,10 +127,7 @@ private[dolphin] object VolatileSessionBuilder {
           stream: String,
           options: ReadStreamSettings
         ): F[ReadOutcome[F]] = FutureLift[F]
-          .futureLift(
-            client
-              .readStream(stream, options.toOptions)
-          )
+          .futureLift(client.readStream(stream, options.toOptions))
           .withTraceAndTransformer(ReadOutcome.make(_))
 
         def subscribeToStream(
@@ -153,10 +135,7 @@ private[dolphin] object VolatileSessionBuilder {
           listener: WithStreamHandler[F],
           options: SubscriptionToStreamSettings
         ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
-          .eval(
-            FutureLift[F]
-              .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
-          )
+          .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions)))
           .flatMap { _ =>
             listener.stream
           }
@@ -168,32 +147,26 @@ private[dolphin] object VolatileSessionBuilder {
         ): F[Unit] =
           FutureLift[F]
             .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
-            .void
+            .withTrace
 
         def subscribeToStream(
           stream: String,
-          listener: WithStreamHandler[F]
+          handler: WithStreamHandler[F]
         ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
-          .eval(
-            FutureLift[F]
-              .futureLift(client.subscribeToStream(stream, listener.listener))
-          )
-          .flatMap(_ => listener.stream)
+          .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, handler.listener)))
+          .flatMap(_ => handler.stream)
 
         def subscribeToStream(
           stream: String,
-          listener: WithHandler[F]
+          handler: WithHandler[F]
         ): F[Unit] =
           FutureLift[F]
-            .futureLift(client.subscribeToStream(stream, listener.listener))
-            .void
+            .futureLift(client.subscribeToStream(stream, handler.listener))
+            .withTrace
 
         def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]] =
           FutureLift[F]
-            .futureLift(
-              client
-                .tombstoneStream(streamAggregateId, options.toOptions)
-            )
+            .futureLift(client.tombstoneStream(streamAggregateId, options.toOptions))
             .withTraceAndTransformer(DeleteOutcome.make(_))
 
         def tombstoneStream(streamAggregateId: String): F[DeleteOutcome[F]] =
