@@ -9,23 +9,22 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-import dolphin.SubscriptionId
 import dolphin.internal.syntax.IOFuture
-import dolphin.internal.syntax.future.*
-import dolphin.outcome.{ResolvedEventOutcome, VolatileSubscription}
+import dolphin.outcome.ResolvedEventOutcome
 import dolphin.trace.Trace
 
 import cats.Applicative
 import cats.effect.kernel.Sync
-import cats.effect.unsafe.IORuntime
 import com.eventstore.dbclient.{
   ResolvedEvent,
   Subscription as JSubscription,
   SubscriptionListener as JSubscriptionListener
 }
 import fs2.{Chunk, Stream}
+// import scala.concurrent.duration.*
 
 sealed trait VolatileSubscriptionListener[F[_]] extends Product with Serializable {
+
   def listener: JSubscriptionListener
 
   def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
@@ -34,57 +33,66 @@ sealed trait VolatileSubscriptionListener[F[_]] extends Product with Serializabl
 object VolatileSubscriptionListener {
 
   final case class WithHandler[F[_]: IOFuture: Trace: Applicative](
-    onEventF: (SubscriptionId, ResolvedEvent) => F[List[VolatileSubscription]],
-    onConfirmationF: SubscriptionId => F[List[VolatileSubscription]],
-    onErrorF: (SubscriptionId, Throwable) => F[List[VolatileSubscription]],
-    onCancelledF: SubscriptionId => F[List[VolatileSubscription]]
+    onEventF: OnEvent[F, VolatileSubscription],
+    onConfirmationF: OnConfirmation[F, VolatileSubscription],
+    onErrorF: OnError[F, VolatileSubscription],
+    onCancelledF: OnCancelled[F, VolatileSubscription]
   )(
-    implicit ec: ExecutionContext,
-    runtime: IORuntime
+    implicit ec: ExecutionContext
   ) extends VolatileSubscriptionListener[F] {
+
+    // TODO: Figure out how to get rid of this
+    import cats.effect.unsafe.implicits.global
 
     override def listener: JSubscriptionListener =
       new JSubscriptionListener {
+
+        private val vs = VolatileSubscription.make
 
         /** Called when EventStoreDB sends an event to the subscription. */
         override def onEvent(
           subscription: JSubscription,
           event: ResolvedEvent
-        ): Unit = IOFuture[F].convert(onEventF(subscription.getSubscriptionId, event)).onComplete {
-          case Failure(exception) => Trace[F].error(exception, Some("Subscription onEvent handler failed")).toUnit
-          case Success(value)     => VolatileSubscription.interpreter[F](subscription, value).toUnit
-        }
+        ): Unit = IOFuture[F]
+          .convert(onEventF(vs, ResolvedEventOutcome.make(event)))
+          .onComplete {
+            case Failure(exception) =>
+              IOFuture[F].convertUnit(Trace[F].error(exception, Some("Subscription onEvent handler failed")))
+            case Success(value)     => IOFuture[F].convertUnit(VolatileSubscription.interpreter[F](subscription, value))
+          }
 
         /** Called when an exception was raised when processing an event. */
         override def onCancelled(
           subscription: JSubscription
-        ): Unit = onCancelledF(subscription.getSubscriptionId).toFuture.onComplete {
-          case Success(value)     => VolatileSubscription.interpreter[F](subscription, value).toUnit
-          case Failure(exception) => Trace[F].error(exception, Some("Subscription onCancelled handler failed")).toUnit
+        ): Unit = IOFuture[F].convert(onCancelledF(vs)).onComplete {
+          case Success(value)     => IOFuture[F].convertUnit(VolatileSubscription.interpreter[F](subscription, value))
+          case Failure(exception) =>
+            IOFuture[F].convertUnit(Trace[F].error(exception, Some("Subscription onCancelled handler failed")))
         }
 
         override def onConfirmation(
           subscription: JSubscription
-        ): Unit = onConfirmationF(subscription.getSubscriptionId).toFuture.onComplete {
+        ): Unit = IOFuture[F].convert(onConfirmationF(vs)).onComplete {
           case Failure(exception) =>
-            Trace[F].error(exception, Some("Subscription onConfirmation handler failed")).toUnit
-          case Success(value)     => VolatileSubscription.interpreter[F](subscription, value).toUnit
+            IOFuture[F].convertUnit(Trace[F].error(exception, Some("Subscription onConfirmation handler failed")))
+          case Success(value)     => IOFuture[F].convertUnit(VolatileSubscription.interpreter[F](subscription, value))
         }
 
         /** Called when an exception was raised when processing an event. */
         override def onError(
           subscription: JSubscription,
           throwable: Throwable
-        ): Unit = IOFuture[F].convert(onErrorF(subscription.getSubscriptionId, throwable)).onComplete {
-          case Success(value)     => VolatileSubscription.interpreter[F](subscription, value).toUnit
-          case Failure(exception) => Trace[F].error(exception, Some("Subscription onError handler failed")).toUnit
+        ): Unit = IOFuture[F].convert(onErrorF(vs, throwable)).onComplete {
+          case Success(value)     => IOFuture[F].convertUnit(VolatileSubscription.interpreter[F](subscription, value))
+          case Failure(exception) =>
+            IOFuture[F].convertUnit(Trace[F].error(exception, Some("Subscription onError handler failed")))
         }
       }
 
     override def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream.empty
   }
 
-  final case class WithStream[F[_]: Sync]() extends VolatileSubscriptionListener[F] {
+  final case class WithStreamHandler[F[_]: Sync]() extends VolatileSubscriptionListener[F] {
 
     private[dolphin] val queue = new ConcurrentLinkedQueue[Either[Throwable, ResolvedEventOutcome[F]]]()
 

@@ -9,15 +9,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-import dolphin.SubscriptionId
 import dolphin.internal.syntax.IOFuture
-import dolphin.internal.syntax.future.*
-import dolphin.outcome.{PersistentSubscription, ResolvedEventOutcome}
+import dolphin.outcome.ResolvedEventOutcome
 import dolphin.trace.Trace
 
 import cats.Applicative
 import cats.effect.kernel.Sync
-import cats.effect.unsafe.IORuntime
 import com.eventstore.dbclient.{
   PersistentSubscription as JPersistentSubscription,
   PersistentSubscriptionListener as JSubscriptionListener,
@@ -33,15 +30,18 @@ trait PersistentSubscriptionListener[F[_]] extends Product with Serializable {
 object PersistentSubscriptionListener {
 
   final case class WithHandler[F[_]: Trace: IOFuture: Applicative](
-    onEventF: (SubscriptionId, ResolvedEvent) => F[List[PersistentSubscription]],
-    onConfirmationF: SubscriptionId => F[List[PersistentSubscription]],
-    onErrorF: (SubscriptionId, Throwable) => F[List[PersistentSubscription]],
-    onCancelledF: SubscriptionId => F[List[PersistentSubscription]]
+    onEventF: OnEvent[F, PersistentSubscription],
+    onConfirmationF: OnConfirmation[F, PersistentSubscription],
+    onErrorF: OnError[F, PersistentSubscription],
+    onCancelledF: OnCancelled[F, PersistentSubscription]
   )(
-    implicit ec: ExecutionContext,
-    runtime: IORuntime
+    implicit ec: ExecutionContext
   ) extends PersistentSubscriptionListener[F] {
 
+    private val ps = PersistentSubscription.make
+
+    // TODO: Figure out how to get rid of this
+    import cats.effect.unsafe.implicits.global
     override def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream.empty
 
     override def listener: JSubscriptionListener =
@@ -50,41 +50,47 @@ object PersistentSubscriptionListener {
         override def onCancelled(
           subscription: JPersistentSubscription
         ): Unit = IOFuture[F]
-          .convert(onCancelledF(subscription.getSubscriptionId))
+          .convert(onCancelledF(ps))
           .onComplete {
-            case Success(cmd)       => PersistentSubscription.interpreter[F](subscription, cmd).toUnit
+            case Success(cmd)       => IOFuture[F].convertUnit(PersistentSubscription.interpreter[F](subscription, cmd))
             case Failure(exception) =>
-              Trace[F].error(exception, Some("PersistentSubscription onCancelled handler failed")).toUnit
+              IOFuture[F].convertUnit(
+                Trace[F].error(exception, Some("PersistentSubscription onCancelled handler failed"))
+              )
           }
 
         override def onConfirmation(subscription: JPersistentSubscription): Unit = IOFuture[F]
-          .convert(onConfirmationF(subscription.getSubscriptionId))
+          .convert(onConfirmationF(ps))
           .onComplete {
-            case Success(cmd)       => PersistentSubscription.interpreter[F](subscription, cmd).toUnit
+            case Success(cmd)       => IOFuture[F].convertUnit(PersistentSubscription.interpreter[F](subscription, cmd))
             case Failure(exception) =>
-              Trace[F].error(exception, Some("PersistentSubscription onConfirmation handler failed")).toUnit
+              IOFuture[F].convertUnit(
+                Trace[F].error(exception, Some("PersistentSubscription onConfirmation handler failed"))
+              )
           }
 
         override def onError(subscription: JPersistentSubscription, throwable: Throwable): Unit = IOFuture[F]
-          .convert(onErrorF(subscription.getSubscriptionId(), throwable))
+          .convert(onErrorF(ps, throwable))
           .onComplete {
-            case Success(cmd)       => PersistentSubscription.interpreter[F](subscription, cmd).toUnit
+            case Success(cmd)       => IOFuture[F].convertUnit(PersistentSubscription.interpreter[F](subscription, cmd))
             case Failure(exception) =>
-              Trace[F].error(exception, Some("PersistentSubscription onError handler failed")).toUnit
+              IOFuture[F].convertUnit(Trace[F].error(exception, Some("PersistentSubscription onError handler failed")))
           }
 
         override def onEvent(subscription: JPersistentSubscription, retryCount: Int, event: ResolvedEvent): Unit =
           IOFuture[F]
-            .convert(onEventF(subscription.getSubscriptionId, event))
+            .convert(onEventF(ps, ResolvedEventOutcome.make(event)))
             .onComplete {
-              case Success(cmd)       => PersistentSubscription.interpreter[F](subscription, cmd).toUnit
+              case Success(cmd)       => IOFuture[F].convertUnit(PersistentSubscription.interpreter[F](subscription, cmd))
               case Failure(exception) =>
-                Trace[F].error(exception, Some("PersistentSubscription onEvent handler failed")).toUnit
+                IOFuture[F].convertUnit(
+                  Trace[F].error(exception, Some("PersistentSubscription onEvent handler failed"))
+                )
             }
       }
   }
 
-  final case class WithStream[F[_]: Sync]() extends PersistentSubscriptionListener[F] {
+  final case class WithStreamHandler[F[_]: Sync]() extends PersistentSubscriptionListener[F] {
     private[dolphin] val queue = new ConcurrentLinkedQueue[Either[Throwable, ResolvedEventOutcome[F]]]()
 
     def listener: JSubscriptionListener =

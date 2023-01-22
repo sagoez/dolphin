@@ -8,15 +8,8 @@ import dolphin.setting.EventStoreSettings
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import fs2.Stream
-import org.typelevel.log4cats.SelfAwareStructuredLogger
-import org.typelevel.log4cats.noop.NoOpLogger
-import weaver.IOSuite
-import weaver.scalacheck.{CheckConfig, Checkers}
 
-object VolatileSessionSuite extends IOSuite with Checkers {
-  override def checkConfig: CheckConfig              = CheckConfig.default.copy(minimumSuccessful = 1)
-  implicit val logger: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
-
+object VolatileSessionSuite extends ResourceSuite {
   override type Res = VolatileSession[IO]
 
   override def sharedResource: Resource[IO, Res] = VolatileSession.resource(EventStoreSettings.Default)

@@ -70,12 +70,12 @@ sealed trait ReadOutcome[F[_]] {
 object ReadOutcome {
 
   private[dolphin] def make[F[_]: Applicative](
-    result: dbclient.ReadResult
+    ctx: dbclient.ReadResult
   ) =
     new ReadOutcome[F] {
 
       /** Returns all the events of the read operation. */
-      def getResolvedEvents: Stream[F, ResolvedEvent] = Stream(result.getEvents.asScala.toSeq*)
+      def getResolvedEvents: Stream[F, ResolvedEvent] = Stream(ctx.getEvents.asScala.toSeq*)
 
       /** Returns the event that was read or which triggered the subscription. If the resolved event represents a link
         * event, the link will be the original event, otherwise it will be the event.
@@ -107,14 +107,14 @@ object ReadOutcome {
       def getRevision: Stream[F, Long] = getRecordedEvent.map(_.getRevision())
 
       /** When reading from a regular stream, returns the first event revision number of the stream. */
-      def getFirstStreamPosition: F[Long] = Applicative[F].pure(result.getFirstStreamPosition)
+      def getFirstStreamPosition: F[Long] = Applicative[F].pure(ctx.getFirstStreamPosition)
 
       /** When reading from a regular stream, returns the last event revision number of the stream. */
-      def getLastStreamPosition: F[Long] = Applicative[F].pure(result.getLastStreamPosition)
+      def getLastStreamPosition: F[Long] = Applicative[F].pure(ctx.getLastStreamPosition)
 
       /** When reading from <b>all</b> stream, returns the last event position. */
       def getLastAllStreamPosition: F[Option[Position]] = Applicative[F].pure(
-        Option(result.getLastAllStreamPosition.toScala)
+        Option(ctx.getLastAllStreamPosition.toScala)
       )
 
     }

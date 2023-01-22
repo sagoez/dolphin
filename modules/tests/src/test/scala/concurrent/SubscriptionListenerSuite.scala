@@ -13,7 +13,8 @@ import weaver.FunSuite
 
 object SubscriptionListenerSuite extends FunSuite {
 
-  val streamListener: VolatileSubscriptionListener.WithStream[IO] = VolatileSubscriptionListener.WithStream()
+  val streamListener: VolatileSubscriptionListener.WithStreamHandler[IO] = VolatileSubscriptionListener
+    .WithStreamHandler()
 
   test("SubscriptionListener should be able to be created") {
     expect(streamListener != null)

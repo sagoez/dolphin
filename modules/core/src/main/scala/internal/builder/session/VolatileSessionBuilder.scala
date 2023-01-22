@@ -9,7 +9,7 @@ import java.util.UUID
 
 import scala.jdk.CollectionConverters.*
 
-import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStream}
+import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
 import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.*
@@ -150,7 +150,7 @@ private[dolphin] object VolatileSessionBuilder {
 
         def subscribeToStream(
           stream: String,
-          listener: WithStream[F],
+          listener: WithStreamHandler[F],
           options: SubscriptionToStreamSettings
         ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
           .eval(
@@ -165,17 +165,14 @@ private[dolphin] object VolatileSessionBuilder {
           stream: String,
           listener: WithHandler[F],
           options: SubscriptionToStreamSettings
-        ): Stream[F, Unit] =
-          Stream
-            .eval(
-              FutureLift[F]
-                .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
-            )
+        ): F[Unit] =
+          FutureLift[F]
+            .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
             .void
 
         def subscribeToStream(
           stream: String,
-          listener: WithStream[F]
+          listener: WithStreamHandler[F]
         ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
           .eval(
             FutureLift[F]
@@ -186,12 +183,9 @@ private[dolphin] object VolatileSessionBuilder {
         def subscribeToStream(
           stream: String,
           listener: WithHandler[F]
-        ): Stream[F, Unit] =
-          Stream
-            .eval(
-              FutureLift[F]
-                .futureLift(client.subscribeToStream(stream, listener.listener))
-            )
+        ): F[Unit] =
+          FutureLift[F]
+            .futureLift(client.subscribeToStream(stream, listener.listener))
             .void
 
         def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]] =

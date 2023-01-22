@@ -72,12 +72,12 @@ sealed trait ResolvedEventOutcome[F[_]] {
 object ResolvedEventOutcome {
 
   private[dolphin] def make[F[_]: Applicative](
-    result: dbclient.ResolvedEvent
+    ctx: dbclient.ResolvedEvent
   ) =
     new ResolvedEventOutcome[F] {
 
-      private def getRecordedEvent       = result.getOriginalEvent
-      private def getLinkedRecordedEvent = result.getLink
+      private def getRecordedEvent       = ctx.getOriginalEvent
+      private def getLinkedRecordedEvent = ctx.getLink
 
       /** The event's payload data.
         */
@@ -145,7 +145,7 @@ object ResolvedEventOutcome {
 
       /** The transaction log position of the event.
         */
-      def getPosition: F[Option[Position]] = Applicative[F].pure(result.getPosition.toScala.map(_.toScala))
+      def getPosition: F[Option[Position]] = Applicative[F].pure(ctx.getPosition.toScala.map(_.toScala))
 
     }
 }

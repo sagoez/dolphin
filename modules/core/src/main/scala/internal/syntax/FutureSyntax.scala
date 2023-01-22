@@ -13,6 +13,10 @@ private[dolphin] object future extends FutureSyntax
 
 private[dolphin] sealed trait IOFuture[F[_]] {
   def convert[A](fa: => F[A])(implicit runtime: IORuntime): Future[A]
+
+  def convertUnit[A](fa: => F[A])(implicit ec: ExecutionContext, runtime: IORuntime): Unit = convert(fa).onComplete(_ =>
+    ()
+  )
 }
 
 private[dolphin] object IOFuture {

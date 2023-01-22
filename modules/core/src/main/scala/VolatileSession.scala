@@ -4,7 +4,7 @@
 
 package dolphin
 
-import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStream}
+import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
 import dolphin.internal.builder.client.VolatileClientBuilder
 import dolphin.internal.builder.session.VolatileSessionBuilder
 import dolphin.internal.util.FutureLift
@@ -132,7 +132,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStream[F],
+    listener: WithStreamHandler[F],
     options: SubscriptionToStreamSettings
   ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 
@@ -155,7 +155,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     streamAggregateId: String,
     listener: WithHandler[F],
     options: SubscriptionToStreamSettings
-  ): Stream[F, Unit]
+  ): F[Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -170,7 +170,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStream[F]
+    listener: WithStreamHandler[F]
   ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -189,7 +189,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def subscribeToStream(
     streamAggregateId: String,
     listener: WithHandler[F]
-  ): Stream[F, Unit]
+  ): F[Unit]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting

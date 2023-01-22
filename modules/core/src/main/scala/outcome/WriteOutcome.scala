@@ -24,14 +24,14 @@ sealed trait WriteOutcome[F[_]] {
 object WriteOutcome {
 
   private[dolphin] def make[F[_]: Applicative](
-    result: dbclient.WriteResult
+    ctx: dbclient.WriteResult
   ) =
     new WriteOutcome[F] {
 
-      def getNextExpectedRevision: F[ExpectedRevision] = Applicative[F].pure(result.getNextExpectedRevision.toScala)
+      def getNextExpectedRevision: F[ExpectedRevision] = Applicative[F].pure(ctx.getNextExpectedRevision.toScala)
 
       /** Transaction log position of the write. */
-      def getLogPosition: F[Position] = Applicative[F].pure(result.getLogPosition.toScala)
+      def getLogPosition: F[Position] = Applicative[F].pure(ctx.getLogPosition.toScala)
 
     }
 }

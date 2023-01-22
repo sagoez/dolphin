@@ -26,22 +26,22 @@ sealed trait PersistentSubscriptionInfoOutcome[F[_]] {
 object PersistentSubscriptionInfoOutcome {
 
   private[dolphin] def make[F[_]: Applicative](
-    result: dbclient.PersistentSubscriptionInfo
+    ctx: dbclient.PersistentSubscriptionInfo
   ): PersistentSubscriptionInfoOutcome[F] =
     new PersistentSubscriptionInfoOutcome[F] {
       import scala.jdk.CollectionConverters.*
 
       /** The source of events for the subscription. */
-      def getEventSource: F[String] = Applicative[F].pure(result.getEventSource)
+      def getEventSource: F[String] = Applicative[F].pure(ctx.getEventSource)
 
       /** The group name given on creation. */
-      def getGroupName: F[String] = Applicative[F].pure(result.getGroupName)
+      def getGroupName: F[String] = Applicative[F].pure(ctx.getGroupName)
 
       /** The current status of the subscription. */
-      def getStatus: F[String] = Applicative[F].pure(result.getStatus)
+      def getStatus: F[String] = Applicative[F].pure(ctx.getStatus)
 
       /** Active connections to the subscription. */
-      def getConnections: List[PersistentSubscriptionConnectionInfoOutcome[F]] = result
+      def getConnections: List[PersistentSubscriptionConnectionInfoOutcome[F]] = ctx
         .getConnections
         .asScala
         .toList

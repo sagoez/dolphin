@@ -19,11 +19,11 @@ sealed trait DeleteOutcome[F[_]] {
 
 object DeleteOutcome {
 
-  private[dolphin] def make[F[_]: Applicative](result: dbclient.DeleteResult): DeleteOutcome[F] =
+  private[dolphin] def make[F[_]: Applicative](ctx: dbclient.DeleteResult): DeleteOutcome[F] =
     new DeleteOutcome[F] {
 
       /** Returns the transaction log position of the stream deletion. */
-      def getPosition: F[Position] = Applicative[F].pure(result.getPosition.toScala)
+      def getPosition: F[Position] = Applicative[F].pure(ctx.getPosition.toScala)
 
     }
 

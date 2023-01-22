@@ -12,6 +12,7 @@ package object dolphin {
   type CommitUnsigned  = Long
   type PrepareUnsigned = Long
 
+  // TODO: See how to provide the subscription id at all.
   type SubscriptionId = String
 
   val Deadline: Long                  = 10_000

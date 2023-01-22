@@ -21,7 +21,7 @@ sealed trait PersistentSubscriptionToInfoOutcome[F[_], +Stats, +Settings] {
 object PersistentSubscriptionToInfoOutcome {
 
   private[dolphin] def makeStream[F[_]: Applicative, Stats, Settings](
-    result: dbclient.PersistentSubscriptionToStreamInfo
+    ctx: dbclient.PersistentSubscriptionToStreamInfo
   ): PersistentSubscriptionToInfoOutcome[
     F,
     PersistentSubscriptionToStatsOutcome[F],
@@ -34,18 +34,18 @@ object PersistentSubscriptionToInfoOutcome {
     ] {
 
       def stats: PersistentSubscriptionToStatsOutcome[F] = PersistentSubscriptionToStatsOutcome.makeStream(
-        result.getStats
+        ctx.getStats
       )
 
       def settings: PersistentSubscriptionToSettingsOutcome[F] = PersistentSubscriptionToSettingsOutcome.makeStream(
-        result.getSettings
+        ctx.getSettings
       )
 
-      def information: PersistentSubscriptionInfoOutcome[F] = PersistentSubscriptionInfoOutcome.make(result)
+      def information: PersistentSubscriptionInfoOutcome[F] = PersistentSubscriptionInfoOutcome.make(ctx)
     }
 
   private[dolphin] def makeAll[F[_]: Applicative](
-    result: dbclient.PersistentSubscriptionToAllInfo
+    ctx: dbclient.PersistentSubscriptionToAllInfo
   ): PersistentSubscriptionToInfoOutcome[
     F,
     PersistentSubscriptionToStatsOutcome[F],
@@ -58,14 +58,14 @@ object PersistentSubscriptionToInfoOutcome {
     ] {
 
       def stats: PersistentSubscriptionToStatsOutcome[F] = PersistentSubscriptionToStatsOutcome.makeAll(
-        result.getStats
+        ctx.getStats
       )
 
       def settings: PersistentSubscriptionToSettingsOutcome[F] = PersistentSubscriptionToSettingsOutcome.makeAll(
-        result.getSettings
+        ctx.getSettings
       )
 
-      def information: PersistentSubscriptionInfoOutcome[F] = PersistentSubscriptionInfoOutcome.make(result)
+      def information: PersistentSubscriptionInfoOutcome[F] = PersistentSubscriptionInfoOutcome.make(ctx)
     }
 
 }
