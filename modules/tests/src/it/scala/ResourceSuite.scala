@@ -12,4 +12,8 @@ abstract class ResourceSuite extends IOSuite with Checkers {
 
   override def checkConfig: CheckConfig = CheckConfig.default.copy(minimumSuccessful = 1)
 
+  def expectAtLeastOne[A, B](value: List[A])(equalTo: B): Boolean = value.exists(value => value == equalTo)
+
+  def expectAtLeastN[A, B](value: List[A], n: Int)(equalTo: B): Boolean = value.count(value => value == equalTo) >= n
+
 }

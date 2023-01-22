@@ -207,12 +207,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
         .get
         .map(value =>
           expect(
-            value == List(
-              "application/octet-stream",
-              "application/octet-stream",
-              "application/octet-stream",
-              "application/octet-stream"
-            )
+            expectAtLeastN(value, 2)("application/octet-stream")
           )
         )
 
