@@ -2,7 +2,7 @@ package dolphin.tests
 
 import dolphin.VolatileSession
 import dolphin.concurrent.ExpectedRevision
-import dolphin.setting.ReadStreamSettings
+import dolphin.setting.ReadFromStreamSettings
 import dolphin.setting.EventStoreSettings
 
 import cats.effect.IO
@@ -38,7 +38,7 @@ object VolatileSessionSuite extends ResourceSuite {
         _               <- Stream.eval(
                              session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
                            )
-        readResult      <- Stream.eval(session.readStream(streamAggregateId, ReadStreamSettings.Default))
+        readResult      <- Stream.eval(session.readStream(streamAggregateId, ReadFromStreamSettings.Default))
         readResultEvent <- readResult.getEventData.map(new String(_))
       } yield expect(readResultEvent == "test-event-")).compile.lastOrError
     }
@@ -46,7 +46,7 @@ object VolatileSessionSuite extends ResourceSuite {
 
   test("Should throw an exception when trying to read a non-existing stream") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>
-      session.readStream(streamAggregateId, ReadStreamSettings.Default).attempt.map {
+      session.readStream(streamAggregateId, ReadFromStreamSettings.Default).attempt.map {
         case Left(exception) =>
           expect(exception.getClass.getCanonicalName == "com.eventstore.dbclient.StreamNotFoundException")
         case Right(_)        => failure("Should have thrown an exception")
@@ -60,7 +60,7 @@ object VolatileSessionSuite extends ResourceSuite {
         _         <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
         _         <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
         _         <- session.tombstoneStream(streamAggregateId)
-        readError <- session.readStream(streamAggregateId, ReadStreamSettings.Default).attempt
+        readError <- session.readStream(streamAggregateId, ReadFromStreamSettings.Default).attempt
       } yield readError match {
         case Left(exception) => expect(exception.getClass.getCanonicalName == "io.grpc.StatusRuntimeException")
         case Right(_)        => failure("Should have thrown an exception")

@@ -114,7 +114,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def readStream(
     streamAggregateId: String,
-    options: ReadStreamSettings
+    options: ReadFromStreamSettings
   ): F[ReadOutcome[F]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.

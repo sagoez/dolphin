@@ -125,7 +125,7 @@ private[dolphin] object VolatileSessionBuilder {
 
         def readStream(
           stream: String,
-          options: ReadStreamSettings
+          options: ReadFromStreamSettings
         ): F[ReadOutcome[F]] = FutureLift[F]
           .futureLift(client.readStream(stream, options.toOptions))
           .withTraceAndTransformer(ReadOutcome.make(_))

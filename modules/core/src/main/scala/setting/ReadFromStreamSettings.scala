@@ -6,84 +6,84 @@ package dolphin.setting
 
 import com.eventstore.dbclient.{ReadStreamOptions, UserCredentials}
 
-sealed abstract case class ReadStreamSettings(
+sealed abstract case class ReadFromStreamSettings(
   private val options: ReadStreamOptions
-) extends BaseSettings[ReadStreamSettings]
+) extends BaseSettings[ReadFromStreamSettings]
   with Product
   with Serializable {
   self =>
 
   private def copy(
     settings: ReadStreamOptions
-  ): ReadStreamSettings = new ReadStreamSettings(settings) {}
+  ): ReadFromStreamSettings = new ReadFromStreamSettings(settings) {}
 
-  override def withAuthentication(credentials: UserCredentials): ReadStreamSettings = copy(
+  override def withAuthentication(credentials: UserCredentials): ReadFromStreamSettings = copy(
     options.authenticated(credentials)
   )
 
-  override def withDeadline(deadlineInMs: Long): ReadStreamSettings = copy(
+  override def withDeadline(deadlineInMs: Long): ReadFromStreamSettings = copy(
     options.deadline(deadlineInMs)
   )
 
-  override def withRequiredLeader(requiresLeader: Boolean): ReadStreamSettings = copy(
+  override def withRequiredLeader(requiresLeader: Boolean): ReadFromStreamSettings = copy(
     options.requiresLeader(requiresLeader)
   )
 
-  override def withAuthentication(login: String, password: String): ReadStreamSettings = copy(
+  override def withAuthentication(login: String, password: String): ReadFromStreamSettings = copy(
     options.authenticated(login, password)
   )
 
   /** Reads stream in revision-descending order. */
-  def backwards: ReadStreamSettings = copy(
+  def backwards: ReadFromStreamSettings = copy(
     options.backwards()
   )
 
   /** Reads stream in revision-ascending order. */
-  def forwards: ReadStreamSettings = copy(
+  def forwards: ReadFromStreamSettings = copy(
     options.forwards()
   )
 
   /** Starts from the given event revision. */
-  def fromRevision(revision: Long): ReadStreamSettings = copy(
+  def fromRevision(revision: Long): ReadFromStreamSettings = copy(
     options.fromRevision(revision)
   )
 
   /** Starts from the beginning of the stream. */
-  def fromStart: ReadStreamSettings = copy(
+  def fromStart: ReadFromStreamSettings = copy(
     options.fromStart()
   )
 
   /** Starts from the end of the stream. */
-  def fromEnd: ReadStreamSettings = copy(
+  def fromEnd: ReadFromStreamSettings = copy(
     options.fromEnd()
   )
 
   /** The maximum event count EventStoreDB will return. */
-  def withMaxCount(maxCount: Long): ReadStreamSettings = copy(
+  def withMaxCount(maxCount: Long): ReadFromStreamSettings = copy(
     options.maxCount(maxCount)
   )
 
   /** Whether the subscription should resolve linkTo events to their linked events. */
-  def resolveLinkTos(enabled: Boolean): ReadStreamSettings = copy(
+  def resolveLinkTos(enabled: Boolean): ReadFromStreamSettings = copy(
     options.resolveLinkTos(enabled)
   )
 
   /** Resolve linkTo events to their linked events. */
-  def resolveLinkTos: ReadStreamSettings = resolveLinkTos(true)
+  def resolveLinkTos: ReadFromStreamSettings = resolveLinkTos(true)
 
   /** Don't resolve linkTo events to their linked events. */
-  def notResolveLinkTos: ReadStreamSettings = resolveLinkTos(false)
+  def notResolveLinkTos: ReadFromStreamSettings = resolveLinkTos(false)
 
   private[dolphin] def toOptions = options
 }
 
-object ReadStreamSettings {
+object ReadFromStreamSettings {
 
   /** Reads only the first event in the stream.
     *
     * @return
-    *   a new [[ReadStreamSettings]] instance
+    *   a new [[ReadFromStreamSettings]] instance
     */
-  val Default: ReadStreamSettings = new ReadStreamSettings(ReadStreamOptions.get()) {}
+  val Default: ReadFromStreamSettings = new ReadFromStreamSettings(ReadStreamOptions.get()) {}
 
 }

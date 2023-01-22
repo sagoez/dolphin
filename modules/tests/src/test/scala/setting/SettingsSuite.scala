@@ -61,9 +61,9 @@ object SettingsSuite extends FunSuite {
     expect(ListPersistentSubscriptionsSettings.Default.toOptions.getClass == options)
   }
 
-  test("ReadStreamSettings should return Java ReadStreamOptions") {
+  test("ReadFromStreamSettings should return Java ReadStreamOptions") {
     val options = ReadStreamOptions.get().getClass
-    expect(ReadStreamSettings.Default.toOptions.getClass == options)
+    expect(ReadFromStreamSettings.Default.toOptions.getClass == options)
   }
 
   test("ReplayParkedMessagesSettings should return java ReplayParkedMessagesOptions") {
