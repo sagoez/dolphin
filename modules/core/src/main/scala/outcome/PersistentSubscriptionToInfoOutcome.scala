@@ -4,6 +4,15 @@
 
 package dolphin.outcome
 
+import dolphin.outcome.PersistentSubscriptionToSettingsOutcome.{
+  PersistentSubscriptionToSettingsWithAllOutcome,
+  PersistentSubscriptionToSettingsWithStreamOutcome
+}
+import dolphin.outcome.PersistentSubscriptionToStatsOutcome.{
+  PersistentSubscriptionToStatsWithAllOutcome,
+  PersistentSubscriptionToStatsWithStreamOutcome
+}
+
 import cats.Applicative
 import com.eventstore.dbclient
 
@@ -20,48 +29,33 @@ sealed trait PersistentSubscriptionToInfoOutcome[F[_], +Stats, +Settings] {
 
 object PersistentSubscriptionToInfoOutcome {
 
-  private[dolphin] def makeStream[F[_]: Applicative, Stats, Settings](
+  private[dolphin] def makeStream[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToStreamInfo
-  ): PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ] =
-    new PersistentSubscriptionToInfoOutcome[
-      F,
-      PersistentSubscriptionToStatsOutcome[F],
-      PersistentSubscriptionToSettingsOutcome[F]
-    ] {
+  ): PersistentOutcomeStream[F] =
+    new PersistentOutcomeStream[F] {
 
-      def stats: PersistentSubscriptionToStatsOutcome[F] = PersistentSubscriptionToStatsOutcome.makeStream(
+      def stats: PersistentSubscriptionToStatsWithStreamOutcome[F] = PersistentSubscriptionToStatsOutcome.makeStream(
         ctx.getStats
       )
 
-      def settings: PersistentSubscriptionToSettingsOutcome[F] = PersistentSubscriptionToSettingsOutcome.makeStream(
-        ctx.getSettings
-      )
+      def settings: PersistentSubscriptionToSettingsWithStreamOutcome[F] = PersistentSubscriptionToSettingsOutcome
+        .makeStream(
+          ctx.getSettings
+        )
 
       def information: PersistentSubscriptionInfoOutcome[F] = PersistentSubscriptionInfoOutcome.make(ctx)
     }
 
   private[dolphin] def makeAll[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToAllInfo
-  ): PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ] =
-    new PersistentSubscriptionToInfoOutcome[
-      F,
-      PersistentSubscriptionToStatsOutcome[F],
-      PersistentSubscriptionToSettingsOutcome[F]
-    ] {
+  ): PersistentOutcomeAll[F] =
+    new PersistentOutcomeAll[F] {
 
-      def stats: PersistentSubscriptionToStatsOutcome[F] = PersistentSubscriptionToStatsOutcome.makeAll(
+      def stats: PersistentSubscriptionToStatsWithAllOutcome[F] = PersistentSubscriptionToStatsOutcome.makeAll(
         ctx.getStats
       )
 
-      def settings: PersistentSubscriptionToSettingsOutcome[F] = PersistentSubscriptionToSettingsOutcome.makeAll(
+      def settings: PersistentSubscriptionToSettingsWithAllOutcome[F] = PersistentSubscriptionToSettingsOutcome.makeAll(
         ctx.getSettings
       )
 

@@ -6,7 +6,7 @@ package dolphin.outcome
 
 import scala.concurrent.duration.FiniteDuration
 
-import dolphin.concurrent.ConsumerStrategy
+import dolphin.concurrent.{ConsumerStrategy, Position}
 
 import cats.Applicative
 import com.eventstore.dbclient
@@ -75,10 +75,37 @@ sealed trait PersistentSubscriptionToSettingsOutcome[F[_]] {
 
 object PersistentSubscriptionToSettingsOutcome {
 
+  sealed trait PersistentSubscriptionToSettingsWithStreamOutcome[F[_]]
+    extends PersistentSubscriptionToSettingsOutcome[F] {
+
+    /** Checks if it's the beginning of the stream. */
+    def isStart: F[Boolean]
+
+    /** Checks if it's the end of the stream. */
+    def isEnd: F[Boolean]
+
+    /** Checks it's a specific position and returns the value. */
+    def position: F[Option[Long]]
+  }
+
+  sealed trait PersistentSubscriptionToSettingsWithAllOutcome[F[_]] extends PersistentSubscriptionToSettingsOutcome[F] {
+
+    /** Where to start subscription from. This can be from the start of the <b>\$all</b> stream, from the end of the
+      * <b>\$all</b> stream at the time of creation, or from an inclusive position in <b>\$all</b> stream.
+      */
+    def getStartFromPosition: F[Option[Position]]
+
+    /** Checks if it's the beginning of the stream. */
+    def isStart: F[Boolean]
+
+    /** Checks if it's the end of the stream. */
+    def isEnd: F[Boolean]
+  }
+
   private[dolphin] def makeStream[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToStreamSettings
-  ) =
-    new PersistentSubscriptionToSettingsOutcome[F] {
+  ): PersistentSubscriptionToSettingsWithStreamOutcome[F] =
+    new PersistentSubscriptionToSettingsWithStreamOutcome[F] {
 
       import dolphin.concurrent.ConsumerStrategy.*
       import dolphin.concurrent.ConsumerStrategy
@@ -131,9 +158,8 @@ object PersistentSubscriptionToSettingsOutcome {
 
   private[dolphin] def makeAll[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToAllSettings
-  ) =
-    new PersistentSubscriptionToSettingsOutcome[F] {
-      import dolphin.concurrent.Position
+  ): PersistentSubscriptionToSettingsWithAllOutcome[F] =
+    new PersistentSubscriptionToSettingsWithAllOutcome[F] {
 
       import dolphin.concurrent.ConsumerStrategy.*
       import dolphin.concurrent.ConsumerStrategy

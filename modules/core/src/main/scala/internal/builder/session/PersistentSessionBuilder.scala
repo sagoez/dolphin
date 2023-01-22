@@ -115,11 +115,7 @@ private[dolphin] object PersistentSessionBuilder {
         /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
         def getInfoToAll(
           subscriptionGroupName: String
-        ): F[Option[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[Option[PersistentOutcomeAll[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName)
@@ -130,11 +126,7 @@ private[dolphin] object PersistentSessionBuilder {
         def getInfoToAll(
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[Option[PersistentOutcomeAll[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName, options.toOptions)
@@ -145,11 +137,7 @@ private[dolphin] object PersistentSessionBuilder {
         def getInfoToStream(
           streamName: String,
           subscriptionGroupName: String
-        ): F[Option[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[Option[PersistentOutcomeStream[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName)
@@ -163,11 +151,7 @@ private[dolphin] object PersistentSessionBuilder {
           streamName: String,
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[Option[PersistentOutcomeStream[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName, options.toOptions)
@@ -199,11 +183,7 @@ private[dolphin] object PersistentSessionBuilder {
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToAll: F[List[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        def listToAll: F[List[PersistentOutcomeAll[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToAll()
@@ -215,11 +195,7 @@ private[dolphin] object PersistentSessionBuilder {
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
         def listToAll(
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[List[PersistentOutcomeAll[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToAll(options.toOptions)
@@ -229,11 +205,7 @@ private[dolphin] object PersistentSessionBuilder {
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToStream(streamName: String): F[List[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        def listToStream(streamName: String): F[List[PersistentOutcomeStream[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName)
@@ -246,11 +218,7 @@ private[dolphin] object PersistentSessionBuilder {
         def listToStream(
           streamName: String,
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentSubscriptionToInfoOutcome[
-          F,
-          PersistentSubscriptionToStatsOutcome[F],
-          PersistentSubscriptionToSettingsOutcome[F]
-        ]]] = FutureLift[F]
+        ): F[List[PersistentOutcomeStream[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName, options.toOptions)

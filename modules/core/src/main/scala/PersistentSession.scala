@@ -144,42 +144,26 @@ trait PersistentSession[F[_]] extends Serializable { self =>
   /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
   def getInfoToAll(
     subscriptionGroupName: String
-  ): F[Option[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[Option[PersistentOutcomeAll[F]]]
 
   /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
   def getInfoToAll(
     subscriptionGroupName: String,
     options: GetPersistentSubscriptionInfoSettings
-  ): F[Option[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[Option[PersistentOutcomeAll[F]]]
 
   /** Gets a specific persistent subscription info to a stream. */
   def getInfoToStream(
     streamName: String,
     subscriptionGroupName: String
-  ): F[Option[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[Option[PersistentOutcomeStream[F]]]
 
   /** Gets a specific persistent subscription info to a stream. */
   def getInfoToStream(
     streamName: String,
     subscriptionGroupName: String,
     options: GetPersistentSubscriptionInfoSettings
-  ): F[Option[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[Option[PersistentOutcomeStream[F]]]
 
   /** Lists all existing persistent subscriptions. */
   def listAll: F[List[PersistentSubscriptionInfoOutcome[F]]]
@@ -190,39 +174,23 @@ trait PersistentSession[F[_]] extends Serializable { self =>
   ): F[List[PersistentSubscriptionInfoOutcome[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-  def listToAll: F[List[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  def listToAll: F[List[PersistentOutcomeAll[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToAll(
     options: ListPersistentSubscriptionsSettings
-  ): F[List[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[List[PersistentOutcomeAll[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToStream(
     streamName: String
-  ): F[List[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[List[PersistentOutcomeStream[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToStream(
     streamName: String,
     options: ListPersistentSubscriptionsSettings
-  ): F[List[PersistentSubscriptionToInfoOutcome[
-    F,
-    PersistentSubscriptionToStatsOutcome[F],
-    PersistentSubscriptionToSettingsOutcome[F]
-  ]]]
+  ): F[List[PersistentOutcomeStream[F]]]
 
   /** Replays a persistent subscription to the <b>\$all</b> stream parked events. */
   def replayParkedMessagesToAll(subscriptionGroupName: String): F[Unit]

@@ -6,8 +6,8 @@ package com.eventstore.dbclient
 
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-
 import com.eventstore.dbclient.*
+import com.eventstore.dbclient.proto.persistentsubscriptions.Persistent
 import com.eventstore.dbclient.proto.streams.StreamsOuterClass
 import io.grpc.stub.ClientCallStreamObserver
 
@@ -55,7 +55,7 @@ object generator {
 
     }
 
-  val observer: ClientCallStreamObserver[StreamsOuterClass.ReadReq] =
+  val volatileObserver: ClientCallStreamObserver[StreamsOuterClass.ReadReq] =
     new ClientCallStreamObserver[StreamsOuterClass.ReadReq] {
 
       def onNext(value: StreamsOuterClass.ReadReq): Unit = ???
@@ -77,11 +77,41 @@ object generator {
       def setOnReadyHandler(onReadyHandler: Runnable): Unit = ???
     }
 
-  val subscription =
+  val persistentObserver: ClientCallStreamObserver[Persistent.ReadReq] =
+    new ClientCallStreamObserver[Persistent.ReadReq] {
+
+      def onNext(value: Persistent.ReadReq): Unit = ???
+
+      def cancel(message: String, cause: Throwable): Unit = ???
+
+      def disableAutoInboundFlowControl(): Unit = ???
+
+      def onCompleted(): Unit = ???
+
+      def isReady: Boolean = ???
+
+      def onError(x: Throwable): Unit = ???
+
+      def request(count: Int): Unit = ???
+
+      def setMessageCompression(x: Boolean): Unit = ???
+
+      def setOnReadyHandler(onReadyHandler: Runnable): Unit = ???
+    }
+
+  val volatileSubscription =
     new Subscription(
-      observer,
+      volatileObserver,
       "test-stream-id",
       checkpointer
     )
+
+  val persistentSubscription =
+    new PersistentSubscription(
+      persistentObserver,
+      "test-stream-id"
+    )
+
+  val retryCount: Int = 10
 
 }
