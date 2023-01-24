@@ -4,6 +4,7 @@
 
 package dolphin
 
+import dolphin.concurrent.SubscriptionState
 import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
 import dolphin.internal.builder.client.VolatileClientBuilder
 import dolphin.internal.builder.session.VolatileSessionBuilder
@@ -134,7 +135,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     streamAggregateId: String,
     listener: WithStreamHandler[F],
     options: SubscriptionToStreamSettings
-  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
+  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
@@ -171,7 +172,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def subscribeToStream(
     streamAggregateId: String,
     handler: WithStreamHandler[F]
-  ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
+  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *

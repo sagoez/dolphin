@@ -4,8 +4,7 @@ import cats.effect.IO
 import cats.effect.kernel.Ref
 import cats.effect.kernel.Resource
 import dolphin.VolatileSession
-import dolphin.concurrent.VolatileSubscription
-import dolphin.concurrent.VolatileSubscriptionListener
+import dolphin.concurrent.{SubscriptionState, VolatileSubscription, VolatileSubscriptionListener}
 import dolphin.outcome.ResolvedEventOutcome
 import dolphin.setting.EventStoreSettings
 import dolphin.tests.ResourceSuite
@@ -63,8 +62,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
       _     <- session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data")
       _     <- session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data")
       // Wait for the subscription to catch up as it is asynchronous
-      _     <- IO.sleep(1.second)
-      value <- ref.get
+      value <- ref.get.delayBy(1.seconds)
     } yield expect(value == List("onConfirmation", "onEvent", "onEvent", "onEvent"))
   }
 
@@ -109,8 +107,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
       _     <- session.subscribeToStream(uuid, listener)
       _     <- session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data")
       // Wait for the subscription to catch up as it is asynchronous
-      _     <- IO.sleep(1.second)
-      value <- ref.get
+      value <- ref.get.delayBy(1.second)
     } yield expect(value.contains("onEvent")) and expect(value.contains("onConfirmation")) and expect(
       value.contains("onCancelled")
     )
@@ -163,8 +160,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
                  .appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data")
                  .flatMap(_ => session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data").start)
       // Wait for the subscription to catch up as it is asynchronous
-      _     <- IO.sleep(1.second)
-      value <- ref.get
+      value <- ref.get.delayBy(1.second)
     } yield expect(value == List("onEvent", "onEvent", "onEvent", "onEvent", "onEvent", "onConfirmation"))
 
   }
@@ -193,8 +189,11 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
               .repeatN(4) concurrently session
               .subscribeToStream(id, VolatileSubscriptionListener.WithStreamHandler[IO]())
               .evalTap {
-                case Left(error)  => IO(println(error))
-                case Right(value) => value.getEventContentType.flatMap(value => ref.update(value :: _))
+                case SubscriptionState.Empty        => IO.unit
+                case SubscriptionState.Cancelled    => IO.unit
+                case SubscriptionState.Error(_)     => IO.unit
+                case SubscriptionState.Event(value) =>
+                  value.getEventContentType.flatMap(value => ref.update(value :: _))
               }
               .meteredStartImmediately(1.seconds)
               .repeatN(4)

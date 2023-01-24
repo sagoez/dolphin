@@ -1,15 +1,17 @@
 package dolphin.concurrent.tests
 
-import cats.effect.IO
-import cats.effect.Resource
+import cats.effect.{IO, Resource}
+import cats.effect.kernel.Ref
 import cats.syntax.traverse.*
-
 import dolphin.PersistentSession
-import dolphin.setting.EventStoreSettings
+import dolphin.concurrent.PersistentSubscriptionListener
+import dolphin.setting.{EventStoreSettings, PersistentSubscriptionSettings, UpdatePersistentSubscriptionToAllSettings}
 import dolphin.tests.ResourceSuite
-
 import io.grpc.StatusRuntimeException
+
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 object PersistentSubscriptionListenerSuite extends ResourceSuite {
 
@@ -103,6 +105,42 @@ object PersistentSubscriptionListenerSuite extends ResourceSuite {
     } yield status
   }
 
-  // TODO: Add tests for the following methods: subscribeToAll, subscribeToStream
+  test("should be able to update a persistent subscription to the all stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _      <- session.createToAll(uuid)
+      _      <- session.updateToAll(uuid, UpdatePersistentSubscriptionToAllSettings.Default.withHistoryBufferSize(400))
+      info   <- session.getInfoToAll(uuid)
+      status <-
+        info.map(_.settings.getHistoryBufferSize) match {
+          case Some(value) => value.map(value => expect(value == 400))
+          case None        => IO.pure(failure("Settings do not match"))
+        }
+    } yield status
+  }
+
+  test("should be able to stop subscription") { session =>
+    val uuid = UUID.randomUUID().toString
+
+    val ref = Ref.unsafe(List.empty[String])
+
+    val handler: PersistentSubscriptionListener.WithHandler[IO] = PersistentSubscriptionListener.WithHandler(
+      onEventF = (subscription, _) => IO.println("Event received") >> IO.pure(subscription.noop),
+      onConfirmationF = subscription => ref.update("OnConfirmed" :: _) >> IO.pure(subscription.stop),
+      onCancelledF = subscription => ref.update("OnCancelled" :: _) >> IO.pure(subscription.noop),
+      onErrorF = (subscription, error) => IO.println(s"Error: $error") >> IO.pure(subscription.noop)
+    )
+
+    for {
+      _       <- session.createToStream(uuid, uuid).attempt
+      _       <- session.subscribeToStream(uuid, uuid, PersistentSubscriptionSettings.Default, handler)
+      content <- ref
+                   .get
+                   .map { list =>
+                     list.contains("OnConfirmed") && list.contains("OnCancelled")
+                   }
+                   .delayBy(1.seconds)
+    } yield expect(content)
+  }
 
 }

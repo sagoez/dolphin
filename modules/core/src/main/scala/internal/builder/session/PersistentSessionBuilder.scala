@@ -8,7 +8,7 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
 import dolphin.PersistentSession
-import dolphin.concurrent.PersistentSubscriptionListener
+import dolphin.concurrent.{PersistentSubscriptionListener, SubscriptionState}
 import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.internal.util.FutureLift.*
@@ -339,7 +339,7 @@ private[dolphin] object PersistentSessionBuilder {
           streamName: String,
           subscriptionGroupName: String,
           handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
           .eval(FutureLift[F].futureLift(client.subscribeToStream(streamName, subscriptionGroupName, handler.listener)))
           .flatMap(_ => handler.stream)
 
@@ -348,7 +348,7 @@ private[dolphin] object PersistentSessionBuilder {
           subscriptionGroupName: String,
           options: PersistentSubscriptionSettings,
           handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
           .eval(
             FutureLift[F].futureLift(
               client.subscribeToStream(streamName, subscriptionGroupName, options.toOptions, handler.listener)
@@ -356,6 +356,45 @@ private[dolphin] object PersistentSessionBuilder {
           )
           .flatMap(_ => handler.stream)
 
+        def subscribeToAll(
+          subscriptionGroupName: String,
+          handler: PersistentSubscriptionListener.WithStreamHandler[F]
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
+          .eval(
+            FutureLift[F].futureLift(client.subscribeToAll(subscriptionGroupName, handler.listener))
+          )
+          .flatMap(_ => handler.stream)
+
+        def subscribeToAll(
+          subscriptionGroupName: String,
+          options: PersistentSubscriptionSettings,
+          handler: PersistentSubscriptionListener.WithStreamHandler[F]
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
+          .eval(
+            FutureLift[F].futureLift(client.subscribeToAll(subscriptionGroupName, options.toOptions, handler.listener))
+          )
+          .flatMap(_ => handler.stream)
+
+        def subscribeToStream(
+          streamName: String,
+          subscriptionGroupName: String,
+          handler: PersistentSubscriptionListener.WithHandler[F]
+        ): F[Unit] =
+          FutureLift[F]
+            .futureLift(client.subscribeToStream(streamName, subscriptionGroupName, handler.listener))
+            .withTrace
+
+        def subscribeToStream(
+          streamName: String,
+          subscriptionGroupName: String,
+          options: PersistentSubscriptionSettings,
+          handler: PersistentSubscriptionListener.WithHandler[F]
+        ): F[Unit] =
+          FutureLift[F]
+            .futureLift(
+              client.subscribeToStream(streamName, subscriptionGroupName, options.toOptions, handler.listener)
+            )
+            .withTrace
       })
     }(_.shutdown)
 

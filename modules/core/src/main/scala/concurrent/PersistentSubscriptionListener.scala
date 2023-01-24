@@ -4,8 +4,6 @@
 
 package dolphin.concurrent
 
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
@@ -24,7 +22,7 @@ import fs2.{Chunk, Stream}
 
 trait PersistentSubscriptionListener[F[_]] extends Product with Serializable {
   def listener: JSubscriptionListener
-  def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
+  def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
 }
 
 object PersistentSubscriptionListener {
@@ -42,7 +40,7 @@ object PersistentSubscriptionListener {
 
     // TODO: Figure out how to get rid of this
     import cats.effect.unsafe.implicits.global
-    override def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream.empty
+    override def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream.empty
 
     override def listener: JSubscriptionListener =
       new JSubscriptionListener {
@@ -91,22 +89,34 @@ object PersistentSubscriptionListener {
   }
 
   final case class WithStreamHandler[F[_]: Sync]() extends PersistentSubscriptionListener[F] {
-    private[dolphin] val queue = new ConcurrentLinkedQueue[Either[Throwable, ResolvedEventOutcome[F]]]()
+    private[dolphin] val queue = SubscriptionState.concurrentLinkedQueue[ResolvedEventOutcome[F]]
 
     def listener: JSubscriptionListener =
       new JSubscriptionListener {
 
         override def onCancelled(
           subscription: JPersistentSubscription
-        ): Unit = queue.clear()
+        ): Unit = {
+          queue.add(
+            SubscriptionState.Cancelled
+          )
+          ()
+        }
 
+        /** This is called when the subscription is confirmed by the server. */
         override def onConfirmation(
           subscription: JPersistentSubscription
-        ): Unit = ()
+        ): Unit = {
+          // Cleaning the queue
+          queue.add(
+            SubscriptionState.Empty
+          )
+          ()
+        }
 
         override def onError(subscription: JPersistentSubscription, throwable: Throwable): Unit = {
           queue.add(
-            Left(throwable)
+            SubscriptionState.Error(throwable)
           )
           ()
         }
@@ -117,17 +127,13 @@ object PersistentSubscriptionListener {
           event: ResolvedEvent
         ): Unit = {
           queue.add(
-            Right(
-              ResolvedEventOutcome.make(
-                event
-              )
-            )
+            SubscriptionState.Event(ResolvedEventOutcome.make(event))
           )
           ()
         }
       }
 
-    def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] =
+    def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] =
       Stream.unfoldChunkEval(()) { _ =>
         Sync[F].delay {
           Option(queue.poll()).map { event =>
