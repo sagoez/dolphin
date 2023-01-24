@@ -4,8 +4,6 @@
 
 package dolphin.concurrent
 
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
@@ -27,7 +25,7 @@ sealed trait VolatileSubscriptionListener[F[_]] extends Product with Serializabl
 
   def listener: JSubscriptionListener
 
-  def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]]
+  def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
 }
 
 object VolatileSubscriptionListener {
@@ -61,7 +59,7 @@ object VolatileSubscriptionListener {
             case Success(value)     => IOFuture[F].convertUnit(VolatileSubscription.interpreter[F](subscription, value))
           }
 
-        /** Called when an exception was raised when processing an event. */
+        /** Called when the subscription is cancelled or dropped. */
         override def onCancelled(
           subscription: JSubscription
         ): Unit = IOFuture[F].convert(onCancelledF(vs)).onComplete {
@@ -89,24 +87,30 @@ object VolatileSubscriptionListener {
         }
       }
 
-    override def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream.empty
+    override def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream.empty
   }
 
   final case class WithStreamHandler[F[_]: Sync]() extends VolatileSubscriptionListener[F] {
 
-    private[dolphin] val queue = new ConcurrentLinkedQueue[Either[Throwable, ResolvedEventOutcome[F]]]()
+    private[dolphin] val queue = SubscriptionState.concurrentLinkedQueue[ResolvedEventOutcome[F]]
 
     override def listener: JSubscriptionListener =
       new JSubscriptionListener {
 
-        /** Called when an exception was raised when processing an event. */
-        override def onCancelled(subscription: JSubscription): Unit = queue.clear()
+        /** Called when the subscription is cancelled or dropped. */
+        override def onCancelled(subscription: JSubscription): Unit = {
+          queue.add(SubscriptionState.Cancelled)
+          ()
+        }
 
-        override def onConfirmation(subscription: JSubscription): Unit = ()
+        override def onConfirmation(subscription: JSubscription): Unit = {
+          queue.add(SubscriptionState.Empty)
+          ()
+        }
 
         /** Called when an exception was raised when processing an event. */
         override def onError(subscription: JSubscription, throwable: Throwable): Unit = {
-          queue.add(Left(throwable))
+          queue.add(SubscriptionState.Error(throwable))
           ()
         }
 
@@ -116,14 +120,14 @@ object VolatileSubscriptionListener {
           event: ResolvedEvent
         ): Unit = {
           queue.add(
-            Right(ResolvedEventOutcome.make(event))
+            SubscriptionState.Event(ResolvedEventOutcome.make(event))
           )
           ()
         }
 
       }
 
-    def stream: Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] =
+    def stream: Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] =
       Stream.unfoldChunkEval(()) { _ =>
         Sync[F].delay {
           Option(queue.poll()).map { event =>

@@ -4,14 +4,15 @@
 
 package dolphin.concurrent.tests
 
-import dolphin.concurrent.{PersistentSubscriptionListener, VolatileSubscriptionListener}
+import dolphin.concurrent.SubscriptionState.Cancelled
+import dolphin.concurrent.{PersistentSubscriptionListener, SubscriptionState, VolatileSubscriptionListener}
 import dolphin.outcome.ResolvedEventOutcome
 
 import cats.effect.IO
 import com.eventstore.dbclient.generator
-import weaver.FunSuite
+import weaver.SimpleIOSuite
 
-object SubscriptionListenerSuite extends FunSuite {
+object SubscriptionListenerSuite extends SimpleIOSuite {
 
   val volatileStreamListener: VolatileSubscriptionListener.WithStreamHandler[IO] = VolatileSubscriptionListener
     .WithStreamHandler[IO]()
@@ -19,118 +20,130 @@ object SubscriptionListenerSuite extends FunSuite {
   val persistentSubscriptionListener: PersistentSubscriptionListener.WithStreamHandler[IO] =
     PersistentSubscriptionListener.WithStreamHandler[IO]()
 
-  test("VolatileSubscriptionListener should be able to be created") {
+  pureTest("VolatileSubscriptionListener should be able to be created") {
     expect(volatileStreamListener != null)
   }
 
-  test("PersistentSubscriptionListener should be able to be created") {
+  pureTest("PersistentSubscriptionListener should be able to be created") {
     expect(persistentSubscriptionListener != null)
   }
 
-  test("VolatileSubscriptionListener listener should be able to be created with an empty queue") {
+  pureTest("VolatileSubscriptionListener listener should be able to be created with an empty state queue") {
 
-    expect(volatileStreamListener.queue.isEmpty && volatileStreamListener.queue.size() == 0)
+    val volatileStreamListener: VolatileSubscriptionListener.WithStreamHandler[IO] = VolatileSubscriptionListener
+      .WithStreamHandler[IO]()
+
+    volatileStreamListener.listener.onConfirmation(generator.volatileSubscription)
+
+    expect(volatileStreamListener.queue.size() == 1) and expect(
+      volatileStreamListener.queue.peek() == SubscriptionState.Empty
+    )
   }
 
-  test("PersistentSubscriptionListener listener should be able to be created with an empty queue") {
+  pureTest("PersistentSubscriptionListener listener should be able to be created with an empty queue") {
+    val persistentSubscriptionListener: PersistentSubscriptionListener.WithStreamHandler[IO] =
+      PersistentSubscriptionListener.WithStreamHandler[IO]()
 
-    expect(persistentSubscriptionListener.queue.isEmpty && persistentSubscriptionListener.queue.size() == 0)
+    persistentSubscriptionListener.listener.onConfirmation(generator.persistentSubscription)
+
+    expect(persistentSubscriptionListener.queue.size() == 1) and expect(
+      persistentSubscriptionListener.queue.peek() == SubscriptionState.Empty
+    )
   }
 
   test(
     "VolatileSubscriptionListener listener should be able to add a Right event to the queue when onEvent is called"
   ) {
 
-    import cats.effect.unsafe.implicits.global
-
     volatileStreamListener.listener.onEvent(generator.volatileSubscription, generator.recordedEvent)
 
-    expect(
-      volatileStreamListener
-        .queue
-        .size() == 1 && volatileStreamListener.queue.peek().map(_.getEventData.unsafeRunSync()) == Right(
-        ResolvedEventOutcome.make(generator.recordedEvent).getEventData.unsafeRunSync()
-      )
-    )
+    for {
+      one <- ResolvedEventOutcome.make(generator.recordedEvent).getEventData
+      two <-
+        volatileStreamListener.queue.poll() match {
+          case SubscriptionState.Event(event) => event.getEventData
+          case _                              => IO(Array.emptyByteArray)
+        }
+    } yield expect(one sameElements two)
+
   }
 
   test(
     "PersistentSubscriptionListener listener should be able to add a Right event to the queue when onEvent is called"
   ) {
 
-    import cats.effect.unsafe.implicits.global
-
     persistentSubscriptionListener
       .listener
       .onEvent(generator.persistentSubscription, generator.retryCount, generator.recordedEvent)
 
-    expect(
-      persistentSubscriptionListener
-        .queue
-        .size() == 1 && persistentSubscriptionListener.queue.peek().map(_.getEventData.unsafeRunSync()) == Right(
-        ResolvedEventOutcome.make(generator.recordedEvent).getEventData.unsafeRunSync()
-      )
-    )
+    for {
+      one <- ResolvedEventOutcome.make(generator.recordedEvent).getEventData
+      two <-
+        persistentSubscriptionListener.queue.poll() match {
+          case SubscriptionState.Event(event) => event.getEventData
+          case _                              => IO(Array.emptyByteArray)
+        }
+    } yield expect(one sameElements two)
   }
 
   test(
     "VolatileSubscriptionListener listener should be able to add a Left event from the queue when onError is called"
   ) {
 
-    import cats.effect.unsafe.implicits.global
+    val volatileStreamListener: VolatileSubscriptionListener.WithStreamHandler[IO] = VolatileSubscriptionListener
+      .WithStreamHandler[IO]()
 
     val exception = new Exception("test exception")
 
     volatileStreamListener.listener.onError(generator.volatileSubscription, exception)
 
-    expect(
-      volatileStreamListener.queue.size() == 2 && volatileStreamListener
-        .queue
-        .poll()
-        .map(_.getEventData.map(new String(_)).unsafeRunSync())
-        == Right(
-          """{"test": "test"}"""
-        ) && volatileStreamListener.queue.peek() == Left(exception)
-    )
+    for {
+      one <- IO(exception)
+      two <-
+        volatileStreamListener.queue.peek() match {
+          case SubscriptionState.Error(error) => IO(error)
+          case _                              => IO(new Exception("non matching exception"))
+        }
+    } yield expect(one == two)
   }
 
   test(
     "PersistentSubscriptionListener listener should be able to add a Left event from the queue when onError is called"
   ) {
 
-    import cats.effect.unsafe.implicits.global
+    val persistentSubscriptionListener: PersistentSubscriptionListener.WithStreamHandler[IO] =
+      PersistentSubscriptionListener.WithStreamHandler[IO]()
 
     val exception = new Exception("test exception")
 
     persistentSubscriptionListener.listener.onError(generator.persistentSubscription, exception)
 
-    expect(
-      persistentSubscriptionListener.queue.size() == 2 && persistentSubscriptionListener
-        .queue
-        .poll()
-        .map(_.getEventData.map(new String(_)).unsafeRunSync())
-        == Right(
-          """{"test": "test"}"""
-        ) && persistentSubscriptionListener.queue.peek() == Left(exception)
-    )
+    for {
+      one <- IO(exception)
+      two <-
+        persistentSubscriptionListener.queue.poll() match {
+          case SubscriptionState.Error(error) => IO(error)
+          case _                              => IO(new Exception("non matching exception"))
+        }
+    } yield expect(one == two)
   }
 
-  test(
-    "VolatileSubscriptionListener listener should be able to remove all events from the queue when onCancelled is called"
+  pureTest(
+    "VolatileSubscriptionListener listener should be able to cancel queue sync when onCancelled is called"
   ) {
 
     volatileStreamListener.listener.onCancelled(generator.volatileSubscription)
 
-    expect(volatileStreamListener.queue.size() == 0 && volatileStreamListener.queue.isEmpty)
+    expect(volatileStreamListener.queue.contains(Cancelled))
   }
 
-  test(
-    "PersistentSubscriptionListener listener should be able to remove all events from the queue when onCancelled is called"
+  pureTest(
+    "PersistentSubscriptionListener listener should be able to cancel queue sync when onCancelled is called"
   ) {
 
     persistentSubscriptionListener.listener.onCancelled(generator.persistentSubscription)
 
-    expect(persistentSubscriptionListener.queue.size() == 0 && persistentSubscriptionListener.queue.isEmpty)
+    expect(persistentSubscriptionListener.queue.contains(Cancelled))
   }
 
 }

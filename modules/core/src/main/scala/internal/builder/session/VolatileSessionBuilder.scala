@@ -9,6 +9,7 @@ import java.util.UUID
 
 import scala.jdk.CollectionConverters.*
 
+import dolphin.concurrent.SubscriptionState
 import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
 import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
@@ -21,7 +22,7 @@ import cats.effect.MonadCancelThrow
 import cats.effect.kernel.Resource
 import cats.syntax.all.*
 import cats.{Applicative, FlatMap}
-import com.eventstore.dbclient.{EventData as JEventData, EventStoreDBClient}
+import com.eventstore.dbclient.{EventData => JEventData, EventStoreDBClient}
 import fs2.Stream
 import sourcecode.{File, Line}
 
@@ -134,7 +135,7 @@ private[dolphin] object VolatileSessionBuilder {
           stream: String,
           listener: WithStreamHandler[F],
           options: SubscriptionToStreamSettings
-        ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
           .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions)))
           .flatMap { _ =>
             listener.stream
@@ -152,7 +153,7 @@ private[dolphin] object VolatileSessionBuilder {
         def subscribeToStream(
           stream: String,
           handler: WithStreamHandler[F]
-        ): Stream[F, Either[Throwable, ResolvedEventOutcome[F]]] = Stream
+        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
           .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, handler.listener)))
           .flatMap(_ => handler.stream)
 

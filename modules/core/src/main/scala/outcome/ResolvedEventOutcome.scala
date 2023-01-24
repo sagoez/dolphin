@@ -14,6 +14,7 @@ import dolphin.concurrent.Position.*
 
 import cats.Applicative
 import com.eventstore.dbclient
+import com.eventstore.dbclient.ResolvedEvent
 
 sealed trait ResolvedEventOutcome[F[_]] {
 
@@ -67,13 +68,15 @@ sealed trait ResolvedEventOutcome[F[_]] {
 
   /** The transaction log position of the event. */
   def getPosition: F[Option[Position]]
+
+  def getResolvedEventUnsafe: ResolvedEvent
 }
 
 object ResolvedEventOutcome {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.ResolvedEvent
-  ) =
+  ): ResolvedEventOutcome[F] =
     new ResolvedEventOutcome[F] {
 
       private def getRecordedEvent       = ctx.getOriginalEvent
@@ -147,5 +150,7 @@ object ResolvedEventOutcome {
         */
       def getPosition: F[Option[Position]] = Applicative[F].pure(ctx.getPosition.toScala.map(_.toScala))
 
+      /** Gives access to the underlying [[ResolvedEvent]]. */
+      def getResolvedEventUnsafe: ResolvedEvent = ctx
     }
 }
