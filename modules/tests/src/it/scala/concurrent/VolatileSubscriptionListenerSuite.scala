@@ -160,7 +160,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
                  .appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data")
                  .flatMap(_ => session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data").start)
       // Wait for the subscription to catch up as it is asynchronous
-      value <- ref.get.delayBy(1.second)
+      value <- ref.get.delayBy(3.second)
     } yield expect(value == List("onEvent", "onEvent", "onEvent", "onEvent", "onEvent", "onConfirmation"))
 
   }
