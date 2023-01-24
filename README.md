@@ -88,7 +88,48 @@ object Main extends IOApp.Simple {
 }
 ```
 
-### Subscribing to a stream _with stream handler_
+#### Subscribing to a stream _with stream handler_
+
+```scala
+import java.util.UUID
+
+import scala.concurrent.duration.*
+
+import dolphin.VolatileSession
+import dolphin.concurrent.VolatileSubscriptionListener
+import dolphin.setting.EventStoreSettings
+
+import cats.effect.{IO, IOApp}
+import cats.syntax.traverse.*
+import fs2.Stream
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+object Main extends IOApp.Simple {
+
+  implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+  override def run: IO[Unit] =
+    (for {
+      session <- VolatileSession.stream[IO](EventStoreSettings.Default)
+      _       <-
+        session
+          .subscribeToStream("test-stream", VolatileSubscriptionListener.WithStreamHandler[IO]())
+          .evalTap(_.get.map(_.getEventData).sequence.flatMap(IO.println))
+          .meteredStartImmediately(3.seconds)
+          .repeat concurrently Stream(UUID.randomUUID())
+          .evalMap (uuid => session.appendToStream("test-stream",s"""{"test": "${uuid}"}""".getBytes, Array.emptyByteArray, "test"))
+          .meteredStartImmediately(3.seconds)
+          .repeat
+
+    } yield ())
+      .compile
+      .drain
+
+}
+```
+
+### Subscribing to a stream _with handler_
 
 ```scala
 import cats.effect.{IO, IOApp}
