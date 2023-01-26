@@ -48,11 +48,12 @@ sealed abstract case class SubscriptionFilterSettings(
     onCheckpointF: (CommitUnsigned, PrepareUnsigned) => Unit,
     intervalMultiplierUnsigned: Int
   ): SubscriptionFilterSettings = {
+    // TODO: Use Dispatcher to run the callback
 
     val checkpoint: Checkpointer =
       new Checkpointer() {
         override def onCheckpoint(subscription: Subscription, position: Position): CompletableFuture[Void] = {
-          // TODO: Unsafe API, check how to do this in a safe way
+
           onCheckpointF(position.getCommitUnsigned, position.getPrepareUnsigned)
 
           null

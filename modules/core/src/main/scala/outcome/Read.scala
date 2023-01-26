@@ -17,7 +17,7 @@ import com.eventstore.dbclient
 import com.eventstore.dbclient.{RecordedEvent, ResolvedEvent}
 import fs2.Stream
 
-sealed trait ReadOutcome[F[_]] {
+sealed trait Read[F[_]] {
 
   /** Returns all the events of the read operation.
     */
@@ -67,12 +67,12 @@ sealed trait ReadOutcome[F[_]] {
   def getLastAllStreamPosition: F[Option[Position]]
 }
 
-object ReadOutcome {
+object Read {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.ReadResult
   ) =
-    new ReadOutcome[F] {
+    new Read[F] {
 
       /** Returns all the events of the read operation. */
       def getResolvedEvents: Stream[F, ResolvedEvent] = Stream(ctx.getEvents.asScala.toSeq*)

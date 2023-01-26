@@ -4,6 +4,7 @@
 
 package dolphin.setting.tests
 
+import dolphin.Config
 import dolphin.setting.{
   CreatePersistentSubscriptionToAllSettings as PS,
   CreatePersistentSubscriptionToStreamSettings as PSS,
@@ -41,14 +42,10 @@ object SettingsSuite extends FunSuite {
   }
 
   test("EventStoreSettings should return default settings") {
-    val options = EventStoreSettings.Default
-    expect(!options.tls) and expect(options.deadline.isEmpty) and expect(!options.tlsVerifyCert) and expect(
+    val options = Config.default
+    expect(!options.tls.tls) and expect(options.deadline == Some(10_000)) and expect(!options.tlsVerifyCert) and expect(
       !options.dnsDiscover
-    ) and expect(options.discoveryInterval.isEmpty) and expect(options.gossipTimeout.isEmpty) and expect(
-      options.keepAliveInterval.isEmpty
-    ) and expect(options.keepAliveTimeout.isEmpty) and expect(options.maxDiscoverAttempts.isEmpty) and expect(
-      !options.throwOnAppendFailure
-    ) and expect(options.nodePreference.isEmpty)
+    )
   }
 
   test("GetPersistentSubscriptionInfoSettings should return java GetPersistentSubscriptionOptions") {

@@ -4,16 +4,15 @@
 
 package dolphin
 
-import dolphin.concurrent.SubscriptionState
-import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
+import dolphin.Message.VolatileMessage
 import dolphin.internal.builder.client.VolatileClientBuilder
 import dolphin.internal.builder.session.VolatileSessionBuilder
-import dolphin.internal.util.FutureLift
-import dolphin.outcome.{DeleteOutcome, ReadOutcome, ResolvedEventOutcome, WriteOutcome}
+import dolphin.outcome.{Delete, Read, Write}
 import dolphin.setting.*
-import dolphin.trace.Trace
 
-import cats.effect.kernel.{MonadCancelThrow, Resource}
+import cats.Parallel
+import cats.effect.Async
+import cats.effect.kernel.Resource
 import fs2.Stream
 import sourcecode.{File, Line}
 
@@ -41,10 +40,10 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def appendToStream(
     streamAggregateId: String,
-    event: Event,
-    metadata: Metadata,
+    event: EventByte,
+    metadata: MetadataBye,
     `type`: String
-  ): F[WriteOutcome[F]]
+  ): F[Write[F]]
 
   /** Appends events to a given stream.
     *
@@ -62,10 +61,10 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def appendToStream(
     streamAggregateId: String,
     options: AppendToStreamSettings,
-    event: Event,
-    metadata: Metadata,
+    event: EventByte,
+    metadata: MetadataBye,
     `type`: String
-  ): F[WriteOutcome[F]]
+  ): F[Write[F]]
 
   /** Appends events to a given stream.
     *
@@ -83,9 +82,9 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def appendToStream(
     streamAggregateId: String,
     options: AppendToStreamSettings,
-    events: List[(Event, Metadata)],
+    events: List[(EventByte, MetadataBye)],
     `type`: String
-  ): F[WriteOutcome[F]]
+  ): F[Write[F]]
 
   /** Appends events to a given stream.
     *
@@ -100,9 +99,9 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def appendToStream(
     streamAggregateId: String,
-    events: List[(Event, Metadata)],
+    events: List[(EventByte, MetadataBye)],
     `type`: String
-  ): F[WriteOutcome[F]]
+  ): F[Write[F]]
 
   /** Read events from a stream. The reading can be done forwards and backwards.
     *
@@ -116,81 +115,77 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def readStream(
     streamAggregateId: String,
     options: ReadFromStreamSettings
-  ): F[ReadOutcome[F]]
+  ): F[Read[F]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
-    * Subscriptions allow you to subscribe to a stream and receive notifications about new events added to the stream.
-    * appears. Dolphin will automatically handle the subscription lifecycle for you, and provide you with a stream of
-    * Either a Throwable or an Event.
+    * <b>WithFuture</b> - Subscriptions allow you to subscribe to a stream and receive notifications about new events
+    * added to the stream. You provide an event handler and an optional starting point to the subscription. The handler
+    * is called for each event from the starting point onward. If events already exist, the handler will be called for
+    * each event one by one until it reaches the end of the stream. From there, the server will notify the handler
+    * whenever a new event appears.
     *
     * @param streamAggregateId
     *   Aggregate id of the stream to subscribe to
-    * @param options
-    *   Options to use when subscribing to the stream
     * @return
-    *   A Stream of Either a Throwable or an Event
+    *   A Resource that will handle the subscription lifecycle
     */
   def subscribeToStream(
     streamAggregateId: String,
-    listener: WithStreamHandler[F],
+    handler: VolatileMessage[F] => F[Unit]
+  ): Resource[F, Unit]
+
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    *
+    * <b>WithFuture</b> - Subscriptions allow you to subscribe to a stream and receive notifications about new events
+    * added to the stream. You provide an event handler and an optional starting point to the subscription. The handler
+    * is called for each event from the starting point onward. If events already exist, the handler will be called for
+    * each event one by one until it reaches the end of the stream. From there, the server will notify the handler
+    * whenever a new event appears.
+    *
+    * @param streamAggregateId
+    *   Aggregate id of the stream to subscribe to
+    * @return
+    *   A Resource that will handle the subscription lifecycle
+    */
+  def subscribeToStream(
+    streamAggregateId: String,
+    options: SubscriptionToStreamSettings,
+    handler: VolatileMessage[F] => F[Unit]
+  ): Resource[F, Unit]
+
+  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
+    *
+    * <b>WithStream</b> - Subscriptions allow you to subscribe to a stream and receive notifications about new events
+    * added to the stream. The stream is a Stream of VolatileMessage[F] which is a wrapper around the event and the
+    * subscription. Dolphin will handle the subscription lifecycle for you but you are responsible for handling the
+    * stream, connection and event handling.
+    *
+    * @param streamAggregateId
+    *   Aggregate id of the stream to subscribe to
+    * @return
+    *   A Stream of VolatileMessage[F] which is a wrapper around the event and the subscription
+    */
+  def subscribeToStream(
+    streamAggregateId: String,
     options: SubscriptionToStreamSettings
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
+  ): Stream[F, VolatileMessage[F]]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
     *
-    * Subscriptions allow you to subscribe to a stream and receive notifications about new events added to the stream.
-    * You provide an even handler and an optional starting point to the subscription. The handler is called for each
-    * event from the starting point onward. If events already exist, the handler will be called for each event one by
-    * one until it reaches the end of the stream. From there, the server will notify the handler whenever a new event
-    * appears.
-    *
-    * @param streamAggregateId
-    *   Aggregate id of the stream to subscribe to
-    * @param options
-    *   Options to use when subscribing to the stream
-    * @return
-    *   A Stream of Either a Throwable or an Event
-    */
-  def subscribeToStream(
-    streamAggregateId: String,
-    listener: WithHandler[F],
-    options: SubscriptionToStreamSettings
-  ): F[Unit]
-
-  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
-    *
-    * Subscriptions allow you to subscribe to a stream and receive notifications about new events added to the stream.
-    * appears. Dolphin will automatically handle the subscription lifecycle for you, and provide you with a stream of
-    * Either a Throwable or an Event.
+    * <b>WithStream</b> - Subscriptions allow you to subscribe to a stream and receive notifications about new events
+    * added to the stream. The stream is a Stream of VolatileMessage[F] which is a wrapper around the event and the
+    * subscription. Dolphin will handle the subscription lifecycle for you but you are responsible for handling the
+    * stream, connection and event handling.
     *
     * @param streamAggregateId
     *   Aggregate id of the stream to subscribe to
     * @return
-    *   A Stream of Either a Throwable or an Event
+    *   A Stream of VolatileMessage[F] which is a wrapper around the event and the subscription
     */
   def subscribeToStream(
-    streamAggregateId: String,
-    handler: WithStreamHandler[F]
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
-
-  /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
-    *
-    * Subscriptions allow you to subscribe to a stream and receive notifications about new events added to the stream.
-    * You provide an even handler and an optional starting point to the subscription. The handler is called for each
-    * event from the starting point onward. If events already exist, the handler will be called for each event one by
-    * one until it reaches the end of the stream. From there, the server will notify the handler whenever a new event
-    * appears.
-    *
-    * @param streamAggregateId
-    *   Aggregate id of the stream to subscribe to
-    * @return
-    *   A Stream of Either a Throwable or an Event
-    */
-  def subscribeToStream(
-    streamAggregateId: String,
-    handler: WithHandler[F]
-  ): F[Unit]
+    streamAggregateId: String
+  ): Stream[F, VolatileMessage[F]]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting
@@ -203,7 +198,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String): F[DeleteOutcome[F]]
+  def deleteStream(streamAggregateId: String): F[Delete[F]]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting
@@ -218,7 +213,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]]
+  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -231,7 +226,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]]
+  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -242,7 +237,8 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String): F[DeleteOutcome[F]]
+  def tombstoneStream(streamAggregateId: String): F[Delete[F]]
+
 }
 
 object VolatileSession {
@@ -256,8 +252,8 @@ object VolatileSession {
     * @return
     *   A [[VolatileSession]] as a Resource
     */
-  def resource[F[_]: FutureLift: MonadCancelThrow](
-    options: EventStoreSettings
+  def resource[F[_]: Async: Parallel](
+    options: Config
   )(
     implicit file: File,
     line: Line,
@@ -277,8 +273,8 @@ object VolatileSession {
     * @return
     *   A [[VolatileSession]] as a Stream
     */
-  def stream[F[_]: FutureLift: MonadCancelThrow](
-    options: EventStoreSettings
+  def stream[F[_]: Async: Parallel](
+    options: Config
   )(
     implicit file: File,
     line: Line,

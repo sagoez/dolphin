@@ -91,40 +91,45 @@ object Main extends IOApp.Simple {
 #### Subscribing to a stream _with stream handler_
 
 ```scala
-import java.util.UUID
-
-import scala.concurrent.duration.*
-
-import dolphin.VolatileSession
-import dolphin.concurrent.VolatileSubscriptionListener
-import dolphin.setting.EventStoreSettings
-
+import dolphin.*
 import cats.effect.{IO, IOApp}
-import cats.syntax.traverse.*
-import fs2.Stream
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import fs2.Stream
+
+import java.util.UUID
+import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
 
   implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-  override def run: IO[Unit] =
-    (for {
-      session <- VolatileSession.stream[IO](EventStoreSettings.Default)
-      _       <-
-        session
-          .subscribeToStream("test-stream", VolatileSubscriptionListener.WithStreamHandler[IO]())
-          .evalTap(_.get.map(_.getEventData).sequence.flatMap(IO.println))
-          .meteredStartImmediately(3.seconds)
-          .repeat concurrently Stream(UUID.randomUUID())
-          .evalMap (uuid => session.appendToStream("test-stream",s"""{"test": "${uuid}"}""".getBytes, Array.emptyByteArray, "test"))
-          .meteredStartImmediately(3.seconds)
-          .repeat
+  def program: Stream[IO, Unit] =
+    for {
+      session <- VolatileSession.stream[IO](Config.default)
+      _       <- Stream
+              .iterateEval(UUID.randomUUID())(_ => IO(UUID.randomUUID()))
+              .evalMap { uuid =>
+                session
+                        .appendToStream(
+                          "cocomono",
+                          s"""{"test": "${uuid}"}""".getBytes,
+                          Array.emptyByteArray,
+                          "test"
+                        )
+              }
+              .metered(10.seconds)
+              .concurrently {
+                session.subscribeToStream("cocomono").evalMap {
+                  case Message.Event(_, event, _) => event.getEventData.map(new String(_)).flatMap(logger.info(_))
+                  case Message.Error(_, error) => logger.error(s"Received error: ${error}")
+                  case Message.Cancelled(_)    => logger.info("Received cancellation")
+                  case Message.Confirmation(_) => logger.info("Received confirmation")
+                }
+              }
+    } yield ()
 
-    } yield ())
-      .compile
-      .drain
+  override def run: IO[Unit] = program.compile.drain
 
 }
 ```
@@ -132,44 +137,33 @@ object Main extends IOApp.Simple {
 ### Subscribing to a stream _with handler_
 
 ```scala
+import dolphin.*
+
 import cats.effect.{IO, IOApp}
-import dolphin.VolatileSession
-import dolphin.concurrent.{VolatileSubscription, VolatileSubscriptionListener}
-import dolphin.outcome.ResolvedEventOutcome
-import dolphin.setting.EventStoreSettings
-import fs2.Stream
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Main extends IOApp.Simple {
 
   implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-  def onEventF(subscription: VolatileSubscription, outcome: ResolvedEventOutcome[IO]): IO[VolatileSubscription] = ???
-  def onConfirmationF(subscription: VolatileSubscription): IO[VolatileSubscription]                             = ???
-  def onErrorF(subscription: VolatileSubscription, error: Throwable): IO[VolatileSubscription]                  = ???
-  def onCancelledF(subscription: VolatileSubscription): IO[VolatileSubscription]                                = ???
+  private val handlers: Message[IO, VolatileConsumer[IO]] => IO[Unit] = {
+    case Message.Event(consumer, event, retryCount) =>
+      logger.info(s"Received event: $event")
+    case Message.Error(consumer, error) =>
+      logger.error(error)(s"Received error: $error")
+    case Message.Cancelled(consumer)    =>
+      logger.info(s"Received cancellation")
+    case Message.Confirmation(consumer) =>
+      logger.info(s"Received confirmation")
+  }
 
   override def run: IO[Unit] =
     (for {
-      session <- VolatileSession.stream[IO](EventStoreSettings.Default)
-      _       <- Stream.eval(
-        session
-          .subscribeToStream(
-            "test-stream",
-            VolatileSubscriptionListener.WithHandler[IO](
-              onEventF = onEventF,
-              onCancelledF = onCancelledF,
-              onConfirmationF = onConfirmationF,
-              onErrorF = onErrorF
-            )
-          )
-      )
-    } yield ())
-      .compile
-      .drain
+      session <- VolatileSession.resource[IO](Config.default)
+      _       <- session.subscribeToStream("serial", handlers)
+
+    } yield ()).useForever
 
 }
 ```
@@ -188,6 +182,7 @@ object Main extends IOApp.Simple {
 - [ ] Revisit design decisions and refactor if needed.
 - [ ] Keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
 - [ ] Improve the way we handle the subscription listener.
+- [ ] Provide Stream[F, Event[...]] instead of a Resource[F, ...] for the subscription.
 - [ ] Improve documentation.
 
 ## Note

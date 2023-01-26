@@ -4,26 +4,20 @@
 
 package dolphin
 
-import dolphin.outcome.PersistentSubscriptionToSettingsOutcome.{
-  PersistentSubscriptionToSettingsWithAllOutcome,
-  PersistentSubscriptionToSettingsWithStreamOutcome
-}
-import dolphin.outcome.PersistentSubscriptionToStatsOutcome.{
-  PersistentSubscriptionToStatsWithAllOutcome,
-  PersistentSubscriptionToStatsWithStreamOutcome
-}
+import dolphin.outcome.Configuration.{ConfigurationWithAll, ConfigurationWithStream}
+import dolphin.outcome.Stats.{StatsWithAll, StatsWithStream}
 
 package object outcome {
 
-  type PersistentOutcomeAll[F[_]] = PersistentSubscriptionToInfoOutcome[
+  type FromAllInformation[F[_]] = Information[
     F,
-    PersistentSubscriptionToStatsWithAllOutcome[F],
-    PersistentSubscriptionToSettingsWithAllOutcome[F]
+    StatsWithAll[F],
+    ConfigurationWithAll[F]
   ]
 
-  type PersistentOutcomeStream[F[_]] = PersistentSubscriptionToInfoOutcome[
+  type FromStreamInformation[F[_]] = Information[
     F,
-    PersistentSubscriptionToStatsWithStreamOutcome[F],
-    PersistentSubscriptionToSettingsWithStreamOutcome[F]
+    StatsWithStream[F],
+    ConfigurationWithStream[F]
   ]
 }

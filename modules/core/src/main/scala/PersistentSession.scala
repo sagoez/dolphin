@@ -4,16 +4,15 @@
 
 package dolphin
 
-import dolphin.concurrent.PersistentSubscriptionListener.{WithHandler, WithStreamHandler}
-import dolphin.concurrent.SubscriptionState
+import dolphin.Message.PersistentMessage
 import dolphin.internal.builder.client.PersistentClientBuilder
 import dolphin.internal.builder.session.PersistentSessionBuilder
-import dolphin.internal.util.FutureLift
 import dolphin.outcome.*
 import dolphin.setting.*
-import dolphin.trace.Trace
 
-import cats.effect.kernel.{MonadCancelThrow, Resource}
+import cats.Parallel
+import cats.effect.Async
+import cats.effect.kernel.Resource
 import fs2.Stream
 import sourcecode.{File, Line}
 
@@ -145,53 +144,53 @@ trait PersistentSession[F[_]] extends Serializable { self =>
   /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
   def getInfoToAll(
     subscriptionGroupName: String
-  ): F[Option[PersistentOutcomeAll[F]]]
+  ): F[Option[FromAllInformation[F]]]
 
   /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
   def getInfoToAll(
     subscriptionGroupName: String,
     options: GetPersistentSubscriptionInfoSettings
-  ): F[Option[PersistentOutcomeAll[F]]]
+  ): F[Option[FromAllInformation[F]]]
 
   /** Gets a specific persistent subscription info to a stream. */
   def getInfoToStream(
     streamName: String,
     subscriptionGroupName: String
-  ): F[Option[PersistentOutcomeStream[F]]]
+  ): F[Option[FromStreamInformation[F]]]
 
   /** Gets a specific persistent subscription info to a stream. */
   def getInfoToStream(
     streamName: String,
     subscriptionGroupName: String,
     options: GetPersistentSubscriptionInfoSettings
-  ): F[Option[PersistentOutcomeStream[F]]]
+  ): F[Option[FromStreamInformation[F]]]
 
   /** Lists all existing persistent subscriptions. */
-  def listAll: F[List[PersistentSubscriptionInfoOutcome[F]]]
+  def listAll: F[List[PersistentSubscription[F]]]
 
   /** Lists all existing persistent subscriptions. */
   def listAll(
     options: ListPersistentSubscriptionsSettings
-  ): F[List[PersistentSubscriptionInfoOutcome[F]]]
+  ): F[List[PersistentSubscription[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-  def listToAll: F[List[PersistentOutcomeAll[F]]]
+  def listToAll: F[List[FromAllInformation[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToAll(
     options: ListPersistentSubscriptionsSettings
-  ): F[List[PersistentOutcomeAll[F]]]
+  ): F[List[FromAllInformation[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToStream(
     streamName: String
-  ): F[List[PersistentOutcomeStream[F]]]
+  ): F[List[FromStreamInformation[F]]]
 
   /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
   def listToStream(
     streamName: String,
     options: ListPersistentSubscriptionsSettings
-  ): F[List[PersistentOutcomeStream[F]]]
+  ): F[List[FromStreamInformation[F]]]
 
   /** Replays a persistent subscription to the <b>\$all</b> stream parked events. */
   def replayParkedMessagesToAll(subscriptionGroupName: String): F[Unit]
@@ -247,61 +246,57 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     options: UpdatePersistentSubscriptionToStreamSettings
   ): F[Unit]
 
-  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
+  /** Subscribes to the <b>\$all</b> stream. */
   def subscribeToAll(
     subscriptionGroupName: String,
-    handler: WithHandler[F]
-  ): F[Unit]
+    handler: PersistentMessage[F] => F[Unit]
+  ): Resource[F, Unit]
 
-  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
-  def subscribeToAll(
-    subscriptionGroupName: String,
-    handler: WithStreamHandler[F]
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
-
-  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
+  /** Subscribes to the <b>\$all</b> stream. */
   def subscribeToAll(
     subscriptionGroupName: String,
     options: PersistentSubscriptionSettings,
-    handler: WithHandler[F]
-  ): F[Unit]
+    handler: PersistentMessage[F] => F[Unit]
+  ): Resource[F, Unit]
 
-  /*Connects to a persistent subscription group on the <b>\$all</b> stream. */
+  /** Subscribes to the <b>\$all</b> stream. */
+  def subscribeToAll(
+    subscriptionGroupName: String
+  ): Stream[F, PersistentMessage[F]]
+
+  /** Subscribes to the <b>\$all</b> stream. */
   def subscribeToAll(
     subscriptionGroupName: String,
-    options: PersistentSubscriptionSettings,
-    handler: WithStreamHandler[F]
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
+    options: PersistentSubscriptionSettings
+  ): Stream[F, PersistentMessage[F]]
 
-  /*Connects to a persistent subscription group on a stream. */
+  /** Subscribes to a stream. */
+  def subscribeToStream(
+    streamName: String,
+    subscriptionGroupName: String
+  ): Stream[F, PersistentMessage[F]]
+
+  /** Subscribes to a stream. */
   def subscribeToStream(
     streamName: String,
     subscriptionGroupName: String,
-    handler: WithStreamHandler[F]
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
+    options: PersistentSubscriptionSettings
+  ): Stream[F, PersistentMessage[F]]
 
-  /*Connects to a persistent subscription group on a stream. */
+  /** Subscribes to a stream. */
   def subscribeToStream(
     streamName: String,
     subscriptionGroupName: String,
-    handler: WithHandler[F]
-  ): F[Unit]
+    handler: PersistentMessage[F] => F[Unit]
+  ): Stream[F, PersistentMessage[F]]
 
-  /*Connects to a persistent subscription group on a stream. */
-  def subscribeToStream(
-    streamName: String,
-    subscriptionGroupName: String,
-    options: PersistentSubscriptionSettings,
-    handler: WithStreamHandler[F]
-  ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]]
-
-  /*Connects to a persistent subscription group on a stream. */
+  /** Subscribes to a stream. */
   def subscribeToStream(
     streamName: String,
     subscriptionGroupName: String,
     options: PersistentSubscriptionSettings,
-    handler: WithHandler[F]
-  ): F[Unit]
+    handler: PersistentMessage[F] => F[Unit]
+  ): Stream[F, PersistentMessage[F]]
 }
 
 object PersistentSession {
@@ -315,8 +310,8 @@ object PersistentSession {
     * @return
     *   A [[PersistentSession]] as a Resource
     */
-  def resource[F[_]: FutureLift: MonadCancelThrow](
-    options: EventStoreSettings
+  def resource[F[_]: Async: Parallel](
+    options: Config
   )(
     implicit
     file: File,
@@ -337,8 +332,8 @@ object PersistentSession {
     * @return
     *   A [[PersistentSession]] as a Stream
     */
-  def stream[F[_]: FutureLift: MonadCancelThrow](
-    options: EventStoreSettings
+  def stream[F[_]: Async: Parallel](
+    options: Config
   )(
     implicit file: File,
     line: Line,

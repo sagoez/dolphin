@@ -11,7 +11,7 @@ import dolphin.concurrent.{ExpectedRevision, Position}
 import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait WriteOutcome[F[_]] {
+sealed trait Write[F[_]] {
 
   /** Transaction log position of the write. */
   def getLogPosition: F[Position]
@@ -21,12 +21,12 @@ sealed trait WriteOutcome[F[_]] {
 
 }
 
-object WriteOutcome {
+object Write {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.WriteResult
   ) =
-    new WriteOutcome[F] {
+    new Write[F] {
 
       def getNextExpectedRevision: F[ExpectedRevision] = Applicative[F].pure(ctx.getNextExpectedRevision.toScala)
 

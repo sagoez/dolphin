@@ -7,8 +7,7 @@ package dolphin.outcome
 import cats.Applicative
 import com.eventstore.dbclient
 
-// Inherits ConnectionBaseOutcome
-sealed trait PersistentSubscriptionInfoOutcome[F[_]] {
+sealed trait PersistentSubscription[F[_]] {
 
   /** The source of events for the subscription. */
   def getEventSource: F[String]
@@ -20,15 +19,15 @@ sealed trait PersistentSubscriptionInfoOutcome[F[_]] {
   def getStatus: F[String]
 
   /** Active connections to the subscription. */
-  def getConnections: List[PersistentSubscriptionConnectionInfoOutcome[F]]
+  def getConnections: List[Connection[F]]
 }
 
-object PersistentSubscriptionInfoOutcome {
+object PersistentSubscription {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionInfo
-  ): PersistentSubscriptionInfoOutcome[F] =
-    new PersistentSubscriptionInfoOutcome[F] {
+  ): PersistentSubscription[F] =
+    new PersistentSubscription[F] {
       import scala.jdk.CollectionConverters.*
 
       /** The source of events for the subscription. */
@@ -41,11 +40,11 @@ object PersistentSubscriptionInfoOutcome {
       def getStatus: F[String] = Applicative[F].pure(ctx.getStatus)
 
       /** Active connections to the subscription. */
-      def getConnections: List[PersistentSubscriptionConnectionInfoOutcome[F]] = ctx
+      def getConnections: List[Connection[F]] = ctx
         .getConnections
         .asScala
         .toList
-        .map(value => PersistentSubscriptionConnectionInfoOutcome.make[F](value))
+        .map(value => Connection.make[F](value))
     }
 
 }

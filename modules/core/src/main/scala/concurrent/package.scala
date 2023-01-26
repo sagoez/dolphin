@@ -4,10 +4,8 @@
 
 package dolphin
 
-import dolphin.outcome.ResolvedEventOutcome
-
 package object concurrent {
-  type OnEvent[F[_], T]        = (T, ResolvedEventOutcome[F]) => F[T]
+  type OnEvent[F[_], T]        = (T, Option[Int], Event[F]) => F[T]
   type OnConfirmation[F[_], T] = T => F[T]
   type OnError[F[_], T]        = (T, Throwable) => F[T]
   type OnCancelled[F[_], T]    = T => F[T]
