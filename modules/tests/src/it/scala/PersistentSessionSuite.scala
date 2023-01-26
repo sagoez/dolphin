@@ -4,6 +4,7 @@ import dolphin.{Config, PersistentSession}
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import cats.syntax.traverse.*
+import dolphin.setting.UpdatePersistentSubscriptionToAllSettings
 import io.grpc.StatusRuntimeException
 
 import java.util.UUID
@@ -54,6 +55,64 @@ object PersistentSessionSuite extends ResourceSuite {
       _   <- session.createToStream(uuid, uuid)
       res <- shouldFailWith(session.createToStream(uuid, uuid), classOf[StatusRuntimeException])
     } yield expect(res)
+  }
+
+  test("should delete a persistent subscription to the all stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _         <- session.createToAll(uuid)
+      _         <- session.deleteToAll(uuid)
+      groupName <- session.listAll.flatMap(_.map(_.getGroupName).sequence)
+    } yield expect(!groupName.contains(uuid))
+  }
+
+  test("should delete a persistent subscription to the stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _         <- session.createToStream(uuid, uuid)
+      _         <- session.deleteToStream(uuid, uuid)
+      groupName <- session.listToStream(uuid).flatMap(_.map(_.information.getGroupName).sequence)
+    } yield expect(!groupName.contains(uuid))
+  }
+
+  test("should be able to get information about a persistent subscription to the all stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _      <- session.createToAll(uuid)
+      info   <- session.getInfoToAll(uuid)
+      status <-
+        info.map(_.information.getGroupName) match {
+          case Some(value) => value.map(value => expect(value == uuid))
+          case None        => IO.pure(failure("No information found"))
+        }
+    } yield status
+  }
+
+  test("should be able to get information about a persistent subscription to the stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _      <- session.createToStream(uuid, uuid)
+      info   <- session.getInfoToStream(uuid, uuid)
+      status <-
+        info.map(_.information.getGroupName) match {
+          case Some(value) => value.map(value => expect(value == uuid))
+          case None        => IO.pure(failure("No information found"))
+        }
+    } yield status
+  }
+
+  test("should be able to update a persistent subscription to the all stream") { session =>
+    val uuid = UUID.randomUUID().toString
+    for {
+      _      <- session.createToAll(uuid)
+      _      <- session.updateToAll(uuid, UpdatePersistentSubscriptionToAllSettings.Default.withHistoryBufferSize(400))
+      info   <- session.getInfoToAll(uuid)
+      status <-
+        info.map(_.settings.getHistoryBufferSize) match {
+          case Some(value) => value.map(value => expect(value == 400))
+          case None        => IO.pure(failure("Settings do not match"))
+        }
+    } yield status
   }
 
 }
