@@ -17,13 +17,10 @@ object PersistentSubscriptionListenerSuite extends ResourceSuite {
 
   override type Res = PersistentSession[IO]
 
-  // TODO: This test is not working and needs to be fixed, it hangs every time
-  test("should be able to stop subscription".ignore) { session =>
+  test("should be able to stop subscription with resource type subscription") { session =>
     val uuid = UUID.randomUUID().toString
 
-    val ref = Ref.unsafe(List.empty[String])
-
-    val handler: PersistentMessage[IO] => IO[Unit] = {
+    def handler(ref: Ref[F, List[String]]): PersistentMessage[IO] => IO[Unit] = {
       case Message.Event(_, event, _) => logger.info(s"Received event: $event")
       case Message.Error(_, error)    => logger.error(error)(s"Received error: $error")
       case Message.Cancelled(_)       => ref.update("OnCancelled" :: _)
@@ -31,17 +28,43 @@ object PersistentSubscriptionListenerSuite extends ResourceSuite {
     }
 
     (for {
-      _       <- Stream.eval(session.createToStream(uuid, uuid).attempt)
-      _       <- session.subscribeToStream(uuid, uuid, PersistentSubscriptionSettings.Default, handler)
-      content <- Stream.eval(
+      ref     <- Resource.eval(Ref.of(List.empty[String]))
+      _       <- Resource.eval(session.createToStream(uuid, uuid))
+      _       <- session.subscribeToStream(uuid, uuid, PersistentSubscriptionSettings.Default, handler(ref))
+      content <- Resource.eval(
                    ref
                      .get
                      .map { list =>
                        list.contains("OnConfirmed") && list.contains("OnCancelled")
                      }
-                     .delayBy(1.seconds)
+                     .delayBy(100.millis)
                  )
-    } yield expect(content)).compile.lastOrError
+    } yield expect(content)).use(IO.pure)
+
+  }
+
+  // TODO: Fix this test is flaky
+  test("should be able to stop subscription with stream type subscription") { session =>
+    val uuid = UUID.randomUUID().toString
+
+    (for {
+      ref         <- Stream.eval(Ref.of(List.empty[String]))
+      _           <- Stream.eval(session.createToStream(uuid, uuid))
+      _           <- session.subscribeToStream(uuid, uuid, PersistentSubscriptionSettings.Default).take(2).evalMap {
+                       case Message.Event(_, event, _) => IO.println(s"Received event: $event")
+                       case Message.Error(_, error)    => IO.println(s"Received error: $error")
+                       case Message.Cancelled(_)       => ref.update("OnCancelled" :: _)
+                       case Message.Confirmation(sus)  => ref.update("OnConfirmed" :: _) >> sus.stop
+                     }
+      expectation <- Stream.eval(
+                       ref
+                         .get
+                         .map { list =>
+                           list.contains("OnConfirmed") && list.contains("OnCancelled")
+                         }
+                     )
+    } yield expect(expectation)).compile.lastOrError.timeout(5.second)
+
   }
 
 }

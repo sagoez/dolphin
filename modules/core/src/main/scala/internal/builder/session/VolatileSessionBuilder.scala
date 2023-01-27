@@ -135,16 +135,19 @@ private[dolphin] object VolatileSessionBuilder {
         ): Resource[F, Unit] =
           for {
             dispatcher   <- Dispatcher.sequential[F]
-            subscription <- Resource.eval(
-                              FutureLift[F]
-                                .futureLift(
-                                  client.subscribeToStream(
-                                    streamAggregateId,
-                                    WithFutureHandlerBuilder[F](handler, dispatcher).listener
-                                  )
-                                )
-                                .void
-                            )
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToStream(
+                        streamAggregateId,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener,
+                        options.toOptions
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
           } yield subscription
 
         def subscribeToStream(

@@ -366,17 +366,19 @@ private[dolphin] object PersistentSessionBuilder {
         ): Resource[F, Unit] =
           for {
             dispatcher   <- Dispatcher.sequential[F]
-            subscription <- Resource.eval(
-                              FutureLift[F]
-                                .futureLift(
-                                  client.subscribeToAll(
-                                    subscriptionGroupName,
-                                    options.toOptions,
-                                    WithFutureHandlerBuilder[F](handler, dispatcher).listener
-                                  )
-                                )
-                                .void
-                            )
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToAll(
+                        subscriptionGroupName,
+                        options.toOptions,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
           } yield subscription
 
         def subscribeToAll(
@@ -417,7 +419,7 @@ private[dolphin] object PersistentSessionBuilder {
           streamName: String,
           subscriptionGroupName: String,
           handler: PersistentMessage[F] => F[Unit]
-        ): Stream[F, PersistentMessage[F]] = self.subscribeToStream(
+        ): Resource[F, Unit] = self.subscribeToStream(
           streamName,
           subscriptionGroupName,
           PersistentSubscriptionSettings.Default,
@@ -429,23 +431,24 @@ private[dolphin] object PersistentSessionBuilder {
           subscriptionGroupName: String,
           options: PersistentSubscriptionSettings,
           handler: PersistentMessage[F] => F[Unit]
-        ): Stream[F, PersistentMessage[F]] =
+        ): Resource[F, Unit] =
           for {
-            listener <- Stream.resource(WithStreamHandlerBuilder.make)
-            stream   <- Stream
-                          .eval(
-                            FutureLift[F]
-                              .futureLift(
-                                client.subscribeToStream(
-                                  streamName,
-                                  subscriptionGroupName,
-                                  options.toOptions,
-                                  listener.listener
-                                )
-                              )
-                          )
-                          .flatMap(_ => listener.stream)
-          } yield stream
+            dispatcher   <- Dispatcher.sequential[F]
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToStream(
+                        streamName,
+                        subscriptionGroupName,
+                        options.toOptions,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
+          } yield subscription
       })
     }(_.shutdown)
 

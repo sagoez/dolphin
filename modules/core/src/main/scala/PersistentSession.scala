@@ -288,7 +288,7 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     streamName: String,
     subscriptionGroupName: String,
     handler: PersistentMessage[F] => F[Unit]
-  ): Stream[F, PersistentMessage[F]]
+  ): Resource[F, Unit]
 
   /** Subscribes to a stream. */
   def subscribeToStream(
@@ -296,7 +296,7 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     subscriptionGroupName: String,
     options: PersistentSubscriptionSettings,
     handler: PersistentMessage[F] => F[Unit]
-  ): Stream[F, PersistentMessage[F]]
+  ): Resource[F, Unit]
 }
 
 object PersistentSession {

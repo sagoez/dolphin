@@ -22,9 +22,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
   test("onEvent with handler should be able to stop appends properly") { session =>
     val uuid = UUID.randomUUID().toString
 
-    val ref: Ref[IO, List[String]] = Ref.unsafe(List.empty[String])
-
-    def handler: VolatileMessage[IO] => IO[Unit] = {
+    def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
       case e: Message.Event[IO, VolatileConsumer[IO]]        => ref.update("onEvent" :: _) *> e.consumer.stop
       case _: Message.Confirmation[IO, VolatileConsumer[IO]] => ref.update("onConfirmation" :: _)
       case _: Message.Error[IO, VolatileConsumer[IO]]        => ref.update("onError" :: _)
@@ -32,9 +30,10 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
     }
 
     (for {
-      _     <- session.subscribeToStream(uuid, handler)
+      ref   <- Resource.eval(Ref.of(List.empty[String]))
+      _     <- session.subscribeToStream(uuid, handler(ref))
       _     <- Resource.eval(session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data"))
-      value <- Resource.eval(ref.get.delayBy(3.second))
+      value <- Resource.eval(ref.get.delayBy(200.millis))
     } yield expect(value.size >= 2) and expect(value.contains("onEvent")) and expect(
       value.contains("onConfirmation")
     ) and expect(
@@ -46,9 +45,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
   test("onEvent with handler should stop when called on any subscription event") { session =>
     val uuid = UUID.randomUUID().toString
 
-    val ref: Ref[IO, List[String]] = Ref.unsafe(List.empty[String])
-
-    def handler: VolatileMessage[IO] => IO[Unit] = {
+    def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
       case e: Message.Event[IO, VolatileConsumer[IO]]        => ref.update("onEvent" :: _) *> e.consumer.stop
       case _: Message.Confirmation[IO, VolatileConsumer[IO]] => ref.update("onConfirmation" :: _)
       case _: Message.Error[IO, VolatileConsumer[IO]]        => ref.update("onError" :: _)
@@ -56,40 +53,40 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
     }
 
     (for {
-      _     <- session.subscribeToStream(uuid, handler)
+      ref   <- Resource.eval(Ref.of(List.empty[String]))
+      _     <- session.subscribeToStream(uuid, handler(ref))
       _     <- Resource.eval(session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data"))
       // Wait for the subscription to catch up as it is asynchronous
-      value <- Resource.eval(ref.get.delayBy(1.second))
+      value <- Resource.eval(ref.get.delayBy(200.millis))
     } yield expect(value.contains("onEvent")) and expect(value.contains("onConfirmation")) and expect(
       value.contains("onCancelled")
     )).use(IO.pure)
 
   }
 
-  // TODO: This test is flaky and needs to be fixed. Dispatcher context dies before the subscription is cancelled
   test("onEvent with handler should be called when EventStoreDB appends an event to the subscription".ignore) {
     session =>
       val uuid = UUID.randomUUID().toString
-      val ref  = Ref.unsafe(List.empty[String])
 
-      def appendConcurrently = (1 to 5)
+      def appendConcurrently = (1 to 100)
         .toList
         .traverse_(_ => session.appendToStream(uuid, "test-event".getBytes, Array.emptyByteArray, "test-data").start)
 
-      def handler: VolatileMessage[IO] => IO[Unit] = {
-        case _: Message.Event[IO, VolatileConsumer[IO]]        => ref.update("onEvent" :: _)
-        case _: Message.Confirmation[IO, VolatileConsumer[IO]] => ref.update("onConfirmation" :: _)
-        case _: Message.Error[IO, VolatileConsumer[IO]]        => ref.update("onError" :: _)
-        case _: Message.Cancelled[IO, VolatileConsumer[IO]]    => ref.update("onCancelled" :: _)
+      def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
+        case Message.Event(_, _, _)  => ref.update("onEvent" :: _)
+        case Message.Confirmation(_) => ref.update("onConfirmation" :: _)
+        case Message.Error(_, _)     => ref.update("onError" :: _)
+        case Message.Cancelled(_)    => ref.update("onCancelled" :: _)
       }
 
       (for {
-        _     <- session.subscribeToStream(uuid, handler)
+        ref   <- Resource.eval(Ref.of(List.empty[String]))
+        _     <- session.subscribeToStream(uuid, handler(ref))
         _     <- Resource.eval(appendConcurrently)
-        // Wait for the subscription to catch up as it is asynchronous
-        value <- Resource.eval(ref.get.delayBy(1.seconds))
-      } yield expect(value == List("onEvent", "onEvent", "onEvent", "onEvent", "onEvent", "onConfirmation")))
+        value <- Resource.eval(ref.get.delayBy(500.millis))
+      } yield expect(expectAtLeastOne(value)("onEvent")) and expect(expectAtLeastN(value, 99)("onEvent")))
         .use(IO.pure)
+        .timeout(5.seconds)
 
   }
 
