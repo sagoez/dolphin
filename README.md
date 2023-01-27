@@ -18,7 +18,6 @@
   - [Roadmap](#roadmap)
   - [Note](#note)
 
-
 ## Introduction
 
 EventStoreDB is an open-source state-transition database, designed for businesses that are ready to harness the true

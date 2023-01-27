@@ -33,6 +33,7 @@ private[dolphin] object PrettyPrinter {
     val hint =
       error match {
         case _: StreamNotFoundException          => "The stream you are trying to read from does not exist"
+        // case _: StreamDeletedException           => "The stream you are trying to read from has been deleted" // Uncomment when the next client version is released
         case _: NotLeaderException               => "The request needing a leader node was executed on a follower node."
         case _: ResourceNotFoundException        =>
           "The resource you are trying to access does not exist or you have no access. Could only happen when a request was performed through HTTP."
