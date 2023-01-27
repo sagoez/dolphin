@@ -6,14 +6,11 @@ import dolphin.concurrent.{ConsumerStrategy, NodePreference as DNodePreference}
 
 package object dolphin {
 
-  type Event    = Array[Byte]
-  type Metadata = Array[Byte]
+  type EventByte   = Array[Byte]
+  type MetadataBye = Array[Byte]
 
   type CommitUnsigned  = Long
   type PrepareUnsigned = Long
-
-  // TODO: See how to provide the subscription id at all.
-  type SubscriptionId = String
 
   val Deadline: Long                  = 10_000
   val ReadFromEnd: Boolean            = false

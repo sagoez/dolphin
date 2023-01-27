@@ -10,17 +10,17 @@ import dolphin.concurrent.Position.*
 import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait DeleteOutcome[F[_]] {
+sealed trait Delete[F[_]] {
 
   /** Returns the transaction log position of the stream deletion. */
   def getPosition: F[Position]
 
 }
 
-object DeleteOutcome {
+object Delete {
 
-  private[dolphin] def make[F[_]: Applicative](ctx: dbclient.DeleteResult): DeleteOutcome[F] =
-    new DeleteOutcome[F] {
+  private[dolphin] def make[F[_]: Applicative](ctx: dbclient.DeleteResult): Delete[F] =
+    new Delete[F] {
 
       /** Returns the transaction log position of the stream deletion. */
       def getPosition: F[Position] = Applicative[F].pure(ctx.getPosition.toScala)

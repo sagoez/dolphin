@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.outcome
+package dolphin
 
 import java.time.Instant
 import java.util.UUID
@@ -10,13 +10,16 @@ import java.util.UUID
 import scala.jdk.OptionConverters.*
 
 import dolphin.concurrent.Position
-import dolphin.concurrent.Position.*
+import dolphin.concurrent.Position.PositionJavaOps
 
 import cats.Applicative
 import com.eventstore.dbclient
 import com.eventstore.dbclient.ResolvedEvent
 
-sealed trait ResolvedEventOutcome[F[_]] {
+sealed trait Event[F[_]] {
+
+  /** Applies the given function to the event's payload data. */
+  def map[B](f: Array[Byte] => B): F[B]
 
   /** The event's payload data. */
   def getEventData: F[Array[Byte]]
@@ -72,12 +75,12 @@ sealed trait ResolvedEventOutcome[F[_]] {
   def getResolvedEventUnsafe: ResolvedEvent
 }
 
-object ResolvedEventOutcome {
+object Event {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.ResolvedEvent
-  ): ResolvedEventOutcome[F] =
-    new ResolvedEventOutcome[F] {
+  ): Event[F] =
+    new Event[F] {
 
       private def getRecordedEvent       = ctx.getOriginalEvent
       private def getLinkedRecordedEvent = ctx.getLink
@@ -152,5 +155,8 @@ object ResolvedEventOutcome {
 
       /** Gives access to the underlying [[ResolvedEvent]]. */
       def getResolvedEventUnsafe: ResolvedEvent = ctx
+
+      def map[B](f: Array[Byte] => B): F[B] = Applicative[F].pure(f(getRecordedEvent.getEventData))
+
     }
 }

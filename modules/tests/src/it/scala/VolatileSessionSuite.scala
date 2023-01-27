@@ -1,10 +1,8 @@
 package dolphin.tests
 
-import dolphin.VolatileSession
+import dolphin.{Config, VolatileSession}
 import dolphin.concurrent.ExpectedRevision
 import dolphin.setting.ReadFromStreamSettings
-import dolphin.setting.EventStoreSettings
-
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import fs2.Stream
@@ -12,7 +10,7 @@ import fs2.Stream
 object VolatileSessionSuite extends ResourceSuite {
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(EventStoreSettings.Default)
+  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.default)
 
   test("Should be able to create a session and write a dummy event to event store database") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>

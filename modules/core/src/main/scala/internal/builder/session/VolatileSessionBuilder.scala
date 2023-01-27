@@ -9,29 +9,33 @@ import java.util.UUID
 
 import scala.jdk.CollectionConverters.*
 
-import dolphin.concurrent.SubscriptionState
-import dolphin.concurrent.VolatileSubscriptionListener.{WithHandler, WithStreamHandler}
+import dolphin.Message.VolatileMessage
+import dolphin.internal.builder.listener.VolatileSubscriptionListenerBuilder.*
 import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.*
 import dolphin.setting.*
-import dolphin.trace.Trace
-import dolphin.{Event, Metadata, VolatileSession}
+import dolphin.{EventByte, MetadataBye, Trace, VolatileSession}
 
-import cats.effect.MonadCancelThrow
+import cats.effect.Async
 import cats.effect.kernel.Resource
-import cats.syntax.all.*
-import cats.{Applicative, FlatMap}
+import cats.effect.std.Dispatcher
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
+import cats.syntax.parallel.*
+import cats.{Applicative, FlatMap, Monad, Parallel}
 import com.eventstore.dbclient.{EventData => JEventData, EventStoreDBClient}
 import fs2.Stream
 import sourcecode.{File, Line}
 
 private[dolphin] object VolatileSessionBuilder {
 
-  // TODO: Revisit uuid creation to give the client more freedom of handling idempotency, see https://developers.eventstore.com/clients/dotnet/21.2/appending.html#idempotence
+  // TODO: Revisit uuid creation to give the
+  //  client more freedom of handling idempotency,
+  //  see https://developers.eventstore.com/clients/dotnet/21.2/appending.html#idempotence
   private def eventData[F[_]: Applicative: FlatMap](
-    event: Event,
-    metadata: Metadata,
+    event: EventByte,
+    metadata: MetadataBye,
     `type`: String
   ): F[JEventData] = Applicative[F].pure(UUID.randomUUID()).flatMap { uuid =>
     Applicative[F].pure {
@@ -42,24 +46,14 @@ private[dolphin] object VolatileSessionBuilder {
     }
   }
 
-  private def eventData[F[_]: Applicative: FlatMap](
-    events: List[(Event, Metadata)],
+  private def eventData[F[_]: Parallel: Monad](
+    events: List[(EventByte, MetadataBye)],
     `type`: String
-  ): F[util.Iterator[JEventData]] = Applicative[F].pure(UUID.randomUUID()).flatMap { uuid =>
-    Applicative[F].pure {
-      events
-        .map { event =>
-          JEventData
-            .builderAsBinary(uuid, `type`, event._1)
-            .metadataAsBytes(event._2)
-            .build()
-        }
-        .asJava
-        .iterator()
-    }
-  }
+  ): F[util.Iterator[JEventData]] = events
+    .parTraverse { case (event, metadata) => eventData(event, metadata, `type`) }
+    .map(_.asJava.iterator())
 
-  def fromClientResource[F[_]: FutureLift: MonadCancelThrow](
+  def fromClientResource[F[_]: Async: Parallel](
     client: EventStoreDBClient
   )(
     implicit line: Line,
@@ -70,113 +64,121 @@ private[dolphin] object VolatileSessionBuilder {
       FutureLift[F].delay(new VolatileSession[F] { self =>
         def shutdown: F[Unit] = FutureLift[F].delay(client.shutdown())
 
-        def deleteStream(streamAggregateId: String): F[DeleteOutcome[F]] = FutureLift[F]
-          .futureLift(client.deleteStream(streamAggregateId))
-          .withTraceAndTransformer(DeleteOutcome.make(_))
+        def deleteStream(
+          streamAggregateId: String
+        ): F[Delete[F]] = self.deleteStream(streamAggregateId, DeleteStreamSettings.Default)
 
-        def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]] = FutureLift[F]
+        def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]] = FutureLift[F]
           .futureLift(client.deleteStream(streamAggregateId, options.toOptions))
-          .withTraceAndTransformer(DeleteOutcome.make(_))
+          .withTraceAndTransformer(Delete.make(_))
 
         def appendToStream(
           stream: String,
-          event: Event,
-          metadata: Metadata,
+          event: EventByte,
+          metadata: MetadataBye,
           `type`: String
-        ): F[WriteOutcome[F]] = eventData(event, metadata, `type`).flatMap { event =>
-          FutureLift[F]
-            .futureLift(client.appendToStream(stream, event))
-            .withTraceAndTransformer(WriteOutcome.make(_))
+        ): F[Write[F]] = self.appendToStream(stream, AppendToStreamSettings.Default, event, metadata, `type`)
 
+        def appendToStream(
+          stream: String,
+          options: AppendToStreamSettings,
+          event: EventByte,
+          metadata: MetadataBye,
+          `type`: String
+        ): F[Write[F]] = eventData(event, metadata, `type`).flatMap { events =>
+          FutureLift[F]
+            .futureLift(client.appendToStream(stream, options.toOptions, events))
+            .withTraceAndTransformer(Write.make(_))
         }
 
         def appendToStream(
           stream: String,
           options: AppendToStreamSettings,
-          event: Event,
-          metadata: Metadata,
+          events: List[(EventByte, MetadataBye)],
           `type`: String
-        ): F[WriteOutcome[F]] = eventData(event, metadata, `type`).flatMap { events =>
+        ): F[Write[F]] = eventData(events, `type`).flatMap { events =>
           FutureLift[F]
             .futureLift(client.appendToStream(stream, options.toOptions, events))
-            .withTraceAndTransformer(WriteOutcome.make(_))
+            .withTraceAndTransformer(Write.make(_))
         }
 
         def appendToStream(
           stream: String,
-          options: AppendToStreamSettings,
-          events: List[(Event, Metadata)],
+          events: List[(EventByte, MetadataBye)],
           `type`: String
-        ): F[WriteOutcome[F]] = eventData(events, `type`).flatMap { events =>
-          FutureLift[F]
-            .futureLift(client.appendToStream(stream, options.toOptions, events))
-            .withTraceAndTransformer(WriteOutcome.make(_))
-        }
-
-        def appendToStream(
-          stream: String,
-          events: List[(Event, Metadata)],
-          `type`: String
-        ): F[WriteOutcome[F]] = eventData(events, `type`).flatMap { events =>
-          FutureLift[F]
-            .futureLift(client.appendToStream(stream, events))
-            .withTraceAndTransformer(WriteOutcome.make(_))
-
-        }
+        ): F[Write[F]] = self.appendToStream(stream, AppendToStreamSettings.Default, events, `type`)
 
         def readStream(
           stream: String,
           options: ReadFromStreamSettings
-        ): F[ReadOutcome[F]] = FutureLift[F]
+        ): F[Read[F]] = FutureLift[F]
           .futureLift(client.readStream(stream, options.toOptions))
-          .withTraceAndTransformer(ReadOutcome.make(_))
+          .withTraceAndTransformer(Read.make(_))
 
-        def subscribeToStream(
-          stream: String,
-          listener: WithStreamHandler[F],
-          options: SubscriptionToStreamSettings
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions)))
-          .flatMap { _ =>
-            listener.stream
-          }
+        def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]] = FutureLift[F]
+          .futureLift(client.tombstoneStream(streamAggregateId, options.toOptions))
+          .withTraceAndTransformer(Delete.make(_))
 
-        def subscribeToStream(
-          stream: String,
-          listener: WithHandler[F],
-          options: SubscriptionToStreamSettings
-        ): F[Unit] =
-          FutureLift[F]
-            .futureLift(client.subscribeToStream(stream, listener.listener, options.toOptions))
-            .withTrace
-
-        def subscribeToStream(
-          stream: String,
-          handler: WithStreamHandler[F]
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(FutureLift[F].futureLift(client.subscribeToStream(stream, handler.listener)))
-          .flatMap(_ => handler.stream)
-
-        def subscribeToStream(
-          stream: String,
-          handler: WithHandler[F]
-        ): F[Unit] =
-          FutureLift[F]
-            .futureLift(client.subscribeToStream(stream, handler.listener))
-            .withTrace
-
-        def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[DeleteOutcome[F]] =
-          FutureLift[F]
-            .futureLift(client.tombstoneStream(streamAggregateId, options.toOptions))
-            .withTraceAndTransformer(DeleteOutcome.make(_))
-
-        def tombstoneStream(streamAggregateId: String): F[DeleteOutcome[F]] =
+        def tombstoneStream(streamAggregateId: String): F[Delete[F]] =
           // Workaround while https://github.com/EventStore/EventStoreDB-Client-Java/issues/201 is not fixed
           self.tombstoneStream(streamAggregateId, DeleteStreamSettings.Default)
+
+        def subscribeToStream(
+          streamAggregateId: String,
+          handler: VolatileMessage[F] => F[Unit]
+        ): Resource[F, Unit] = self.subscribeToStream(streamAggregateId, SubscriptionToStreamSettings.Default, handler)
+
+        def subscribeToStream(
+          streamAggregateId: String,
+          options: SubscriptionToStreamSettings,
+          handler: VolatileMessage[F] => F[Unit]
+        ): Resource[F, Unit] =
+          for {
+            dispatcher   <- Dispatcher.sequential[F]
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToStream(
+                        streamAggregateId,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener,
+                        options.toOptions
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
+          } yield subscription
+
+        def subscribeToStream(
+          streamAggregateId: String
+        ): Stream[F, VolatileMessage[F]] = self.subscribeToStream(
+          streamAggregateId,
+          SubscriptionToStreamSettings.Default
+        )
+
+        def subscribeToStream(
+          streamAggregateId: String,
+          options: SubscriptionToStreamSettings
+        ): Stream[F, VolatileMessage[F]] =
+          for {
+            listener <- Stream.resource(WithStreamHandlerBuilder.make)
+            stream   <- Stream
+                          .eval(
+                            FutureLift[F]
+                              .futureLift(
+                                client.subscribeToStream(
+                                  streamAggregateId,
+                                  listener.listener
+                                )
+                              )
+                          )
+                          .flatMap(_ => listener.stream)
+          } yield stream
       })
     }(_.shutdown)
 
-  def fromClientStream[F[_]: FutureLift: MonadCancelThrow](
+  def fromClientStream[F[_]: Async: Parallel](
     client: EventStoreDBClient
   )(
     implicit line: Line,

@@ -4,8 +4,8 @@
 
 package dolphin.internal.builder.client
 
+import dolphin.Config
 import dolphin.internal.builder.ClientBuilder
-import dolphin.setting.EventStoreSettings
 
 import cats.MonadThrow
 import cats.effect.kernel.{MonadCancelThrow, Resource}
@@ -15,14 +15,14 @@ import fs2.Stream
 object PersistentClientBuilder {
 
   def resource[F[_]: MonadThrow](
-    options: EventStoreSettings
+    options: Config
   ): Resource[F, EventStoreDBPersistentSubscriptionsClient] = ClientBuilder.makeResource(
     EventStoreDBPersistentSubscriptionsClient.create,
     options
   )
 
   def stream[F[_]: MonadCancelThrow](
-    options: EventStoreSettings
+    options: Config
   ): Stream[F, EventStoreDBPersistentSubscriptionsClient] = ClientBuilder.makeStream(
     EventStoreDBPersistentSubscriptionsClient.create,
     options

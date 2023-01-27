@@ -10,7 +10,7 @@ import dolphin.concurrent.Position.*
 import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait PersistentSubscriptionToStatsOutcome[F[_]] {
+sealed trait Stats[F[_]] {
 
   /** Average number of events per seconds. */
   def getAveragePerSecond: F[Int]
@@ -40,14 +40,14 @@ sealed trait PersistentSubscriptionToStatsOutcome[F[_]] {
   def getTotalItemsProcessed: F[Long]
 }
 
-object PersistentSubscriptionToStatsOutcome {
+object Stats {
 
-  sealed trait PersistentSubscriptionToStatsWithStreamOutcome[F[_]] extends PersistentSubscriptionToStatsOutcome[F] {
+  sealed trait StatsWithStream[F[_]] extends Stats[F] {
     def getLastCheckpointedEventRevision: F[Option[Long]]
     def getLastKnownEventRevision: F[Option[Long]]
   }
 
-  sealed trait PersistentSubscriptionToStatsWithAllOutcome[F[_]] extends PersistentSubscriptionToStatsOutcome[F] {
+  sealed trait StatsWithAll[F[_]] extends Stats[F] {
 
     /** The transaction log position of the last checkpoint. */
     def getLastCheckpointedEventPosition: F[Option[Position]]
@@ -58,8 +58,8 @@ object PersistentSubscriptionToStatsOutcome {
 
   private[dolphin] def makeAll[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToAllStats
-  ): PersistentSubscriptionToStatsWithAllOutcome[F] =
-    new PersistentSubscriptionToStatsWithAllOutcome[F] {
+  ): StatsWithAll[F] =
+    new StatsWithAll[F] {
 
       import scala.jdk.OptionConverters.*
 
@@ -103,8 +103,8 @@ object PersistentSubscriptionToStatsOutcome {
 
   private[dolphin] def makeStream[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionToStreamStats
-  ): PersistentSubscriptionToStatsWithStreamOutcome[F] =
-    new PersistentSubscriptionToStatsWithStreamOutcome[F] {
+  ): StatsWithStream[F] =
+    new StatsWithStream[F] {
       import scala.jdk.OptionConverters.*
 
       /** The revision number of the last checkpoint. */

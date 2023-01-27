@@ -7,7 +7,7 @@ package dolphin.outcome
 import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait PersistentSubscriptionConnectionInfoOutcome[F[_]] {
+sealed trait Connection[F[_]] {
 
   /** Number of available slots. */
   def getAvailableSlots: F[Long]
@@ -38,12 +38,12 @@ sealed trait PersistentSubscriptionConnectionInfoOutcome[F[_]] {
 
 }
 
-object PersistentSubscriptionConnectionInfoOutcome {
+object Connection {
 
   private[dolphin] def make[F[_]: Applicative](
     ctx: dbclient.PersistentSubscriptionConnectionInfo
-  ): PersistentSubscriptionConnectionInfoOutcome[F] =
-    new PersistentSubscriptionConnectionInfoOutcome[F] {
+  ): Connection[F] =
+    new Connection[F] {
       import scala.jdk.CollectionConverters.*
 
       /** Number of available slots. */

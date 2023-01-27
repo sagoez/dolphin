@@ -5,7 +5,6 @@
 package dolphin.internal.builder
 
 import dolphin.*
-import dolphin.setting.EventStoreSettings
 
 import cats.MonadThrow
 import cats.effect.kernel.{MonadCancelThrow, Resource}
@@ -18,14 +17,14 @@ private[internal] object ClientBuilder {
 
   def makeResource[F[_]: MonadThrow, A](
     fa: EventStoreDBClientSettings => A,
-    options: EventStoreSettings
+    options: Config
   ): Resource[F, A] = Resource.eval {
     MonadThrow[F].attempt(
       MonadThrow[F].pure(
         EventStoreDBClientSettings
           .builder()
-          .tls(options.tls)
-          .addHost(new Endpoint(options.host, options.port))
+          .tls(options.tls.tls)
+          .addHost(new Endpoint(options.host.host, options.port.port))
           .defaultDeadline(options.deadline.getOrElse(Deadline))
           .discoveryInterval(options.discoveryInterval.getOrElse(DiscoveryInterval))
           .gossipTimeout(options.gossipTimeout.getOrElse(GossipTimeout))
@@ -50,7 +49,7 @@ private[internal] object ClientBuilder {
 
   def makeStream[F[_]: MonadCancelThrow, A](
     fa: EventStoreDBClientSettings => A,
-    options: EventStoreSettings
+    options: Config
   ): Stream[F, A] = Stream.resource(makeResource[F, A](fa, options))
 
 }

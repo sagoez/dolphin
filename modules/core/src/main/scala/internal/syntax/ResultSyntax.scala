@@ -2,12 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-// Copyright (c) 2022 by LapsusHQ
-// This software is licensed under the MIT License (MIT).
-// For more information see LICENSE or https://opensource.org/licenses/MIT
 package dolphin.internal.syntax
 
-import dolphin.trace.Trace
+import dolphin.Trace
 
 import cats.MonadThrow
 import sourcecode.{File, Line}

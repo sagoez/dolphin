@@ -7,24 +7,31 @@ package dolphin.internal.builder.session
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
-import dolphin.PersistentSession
-import dolphin.concurrent.{PersistentSubscriptionListener, SubscriptionState}
+import dolphin.Message.PersistentMessage
+import dolphin.internal.builder.listener.PersistentSubscriptionListenerBuilder.{
+  WithFutureHandlerBuilder,
+  WithStreamHandlerBuilder
+}
 import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.internal.util.FutureLift.*
 import dolphin.outcome.*
 import dolphin.setting.*
-import dolphin.trace.Trace
+import dolphin.{PersistentSession, Trace}
 
-import cats.effect.kernel.{MonadCancelThrow, Resource}
+import cats.Parallel
+import cats.effect.Async
+import cats.effect.kernel.Resource
+import cats.effect.std.Dispatcher
 import cats.syntax.apply.*
+import cats.syntax.functor.*
 import com.eventstore.dbclient.EventStoreDBPersistentSubscriptionsClient
 import fs2.Stream
 import sourcecode.{File, Line}
 
 private[dolphin] object PersistentSessionBuilder {
 
-  def fromClientResource[F[_]: FutureLift: MonadCancelThrow](
+  def fromClientResource[F[_]: Async: FutureLift: Parallel](
     client: EventStoreDBPersistentSubscriptionsClient
   )(
     implicit line: Line,
@@ -115,35 +122,35 @@ private[dolphin] object PersistentSessionBuilder {
         /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
         def getInfoToAll(
           subscriptionGroupName: String
-        ): F[Option[PersistentOutcomeAll[F]]] = FutureLift[F]
+        ): F[Option[FromAllInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName)
           )
-          .withTraceAndTransformer(_.toScala.map(PersistentSubscriptionToInfoOutcome.makeAll(_)))
+          .withTraceAndTransformer(_.toScala.map(Information.makeAll(_)))
 
         /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
         def getInfoToAll(
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[PersistentOutcomeAll[F]]] = FutureLift[F]
+        ): F[Option[FromAllInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName, options.toOptions)
           )
-          .withTraceAndTransformer(_.toScala.map(PersistentSubscriptionToInfoOutcome.makeAll(_)))
+          .withTraceAndTransformer(_.toScala.map(Information.makeAll(_)))
 
         /** Gets a specific persistent subscription info to a stream. */
         def getInfoToStream(
           streamName: String,
           subscriptionGroupName: String
-        ): F[Option[PersistentOutcomeStream[F]]] = FutureLift[F]
+        ): F[Option[FromStreamInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName)
           )
           .withTraceAndTransformer(
-            _.toScala.map(PersistentSubscriptionToInfoOutcome.makeStream(_))
+            _.toScala.map(Information.makeStream(_))
           )
 
         /** Gets a specific persistent subscription info to a stream. */
@@ -151,80 +158,80 @@ private[dolphin] object PersistentSessionBuilder {
           streamName: String,
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[PersistentOutcomeStream[F]]] = FutureLift[F]
+        ): F[Option[FromStreamInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName, options.toOptions)
           )
           .withTraceAndTransformer(
-            _.toScala.map(PersistentSubscriptionToInfoOutcome.makeStream(_))
+            _.toScala.map(Information.makeStream(_))
           )
 
         /** Lists all existing persistent subscriptions. */
-        def listAll: F[List[PersistentSubscriptionInfoOutcome[F]]] = FutureLift[F]
+        def listAll: F[List[PersistentSubscription[F]]] = FutureLift[F]
           .futureLift(
             client
               .listAll()
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionInfoOutcome.make(_))
+            _.asScala.toList.map(PersistentSubscription.make(_))
           )
 
         /** Lists all existing persistent subscriptions. */
         def listAll(
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentSubscriptionInfoOutcome[F]]] = FutureLift[F]
+        ): F[List[PersistentSubscription[F]]] = FutureLift[F]
           .futureLift(
             client
               .listAll(options.toOptions)
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionInfoOutcome.make(_))
+            _.asScala.toList.map(PersistentSubscription.make(_))
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToAll: F[List[PersistentOutcomeAll[F]]] = FutureLift[F]
+        def listToAll: F[List[FromAllInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToAll()
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionToInfoOutcome.makeAll(_))
+            _.asScala.toList.map(Information.makeAll(_))
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
         def listToAll(
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentOutcomeAll[F]]] = FutureLift[F]
+        ): F[List[FromAllInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToAll(options.toOptions)
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionToInfoOutcome.makeAll(_))
+            _.asScala.toList.map(Information.makeAll(_))
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToStream(streamName: String): F[List[PersistentOutcomeStream[F]]] = FutureLift[F]
+        def listToStream(streamName: String): F[List[FromStreamInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName)
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionToInfoOutcome.makeStream(_))
+            _.asScala.toList.map(Information.makeStream(_))
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
         def listToStream(
           streamName: String,
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentOutcomeStream[F]]] = FutureLift[F]
+        ): F[List[FromStreamInformation[F]]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName, options.toOptions)
           )
           .withTraceAndTransformer(
-            _.asScala.toList.map(PersistentSubscriptionToInfoOutcome.makeStream(_))
+            _.asScala.toList.map(Information.makeStream(_))
           )
 
         def replayParkedMessagesToAll(subscriptionGroupName: String): F[Unit] =
@@ -321,84 +328,131 @@ private[dolphin] object PersistentSessionBuilder {
             .futureLift(client.updateToStream(streamName, subscriptionGroupName, options.toOptions))
             .withTrace
 
-        def subscribeToAll(
-          subscriptionGroupName: String,
-          handler: PersistentSubscriptionListener.WithHandler[F]
-        ): F[Unit] = FutureLift[F].futureLift(client.subscribeToAll(subscriptionGroupName, handler.listener)).withTrace
-
-        def subscribeToAll(
-          subscriptionGroupName: String,
-          options: PersistentSubscriptionSettings,
-          handler: PersistentSubscriptionListener.WithHandler[F]
-        ): F[Unit] =
-          FutureLift[F]
-            .futureLift(client.subscribeToAll(subscriptionGroupName, options.toOptions, handler.listener))
-            .withTrace
+        def subscribeToStream(
+          streamName: String,
+          subscriptionGroupName: String
+        ): Stream[F, PersistentMessage[F]] = self.subscribeToStream(
+          streamName,
+          subscriptionGroupName,
+          PersistentSubscriptionSettings.Default
+        )
 
         def subscribeToStream(
           streamName: String,
           subscriptionGroupName: String,
-          handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(FutureLift[F].futureLift(client.subscribeToStream(streamName, subscriptionGroupName, handler.listener)))
-          .flatMap(_ => handler.stream)
-
-        def subscribeToStream(
-          streamName: String,
-          subscriptionGroupName: String,
-          options: PersistentSubscriptionSettings,
-          handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(
-            FutureLift[F].futureLift(
-              client.subscribeToStream(streamName, subscriptionGroupName, options.toOptions, handler.listener)
-            )
-          )
-          .flatMap(_ => handler.stream)
-
-        def subscribeToAll(
-          subscriptionGroupName: String,
-          handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(
-            FutureLift[F].futureLift(client.subscribeToAll(subscriptionGroupName, handler.listener))
-          )
-          .flatMap(_ => handler.stream)
+          options: PersistentSubscriptionSettings
+        ): Stream[F, PersistentMessage[F]] =
+          for {
+            listener <- Stream.resource(WithStreamHandlerBuilder.make)
+            stream   <- Stream
+                          .eval(
+                            FutureLift[F]
+                              .futureLift(
+                                client.subscribeToStream(
+                                  streamName,
+                                  subscriptionGroupName,
+                                  options.toOptions,
+                                  listener.listener
+                                )
+                              )
+                          )
+                          .flatMap(_ => listener.stream)
+          } yield stream
 
         def subscribeToAll(
           subscriptionGroupName: String,
           options: PersistentSubscriptionSettings,
-          handler: PersistentSubscriptionListener.WithStreamHandler[F]
-        ): Stream[F, SubscriptionState[ResolvedEventOutcome[F]]] = Stream
-          .eval(
-            FutureLift[F].futureLift(client.subscribeToAll(subscriptionGroupName, options.toOptions, handler.listener))
-          )
-          .flatMap(_ => handler.stream)
+          handler: PersistentMessage[F] => F[Unit]
+        ): Resource[F, Unit] =
+          for {
+            dispatcher   <- Dispatcher.sequential[F]
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToAll(
+                        subscriptionGroupName,
+                        options.toOptions,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
+          } yield subscription
+
+        def subscribeToAll(
+          subscriptionGroupName: String,
+          handler: PersistentMessage[F] => F[Unit]
+        ): Resource[F, Unit] = self.subscribeToAll(
+          subscriptionGroupName,
+          PersistentSubscriptionSettings.Default,
+          handler
+        )
+
+        def subscribeToAll(subscriptionGroupName: String): Stream[F, PersistentMessage[F]] = self.subscribeToAll(
+          subscriptionGroupName,
+          PersistentSubscriptionSettings.Default
+        )
+
+        def subscribeToAll(
+          subscriptionGroupName: String,
+          options: PersistentSubscriptionSettings
+        ): Stream[F, PersistentMessage[F]] =
+          for {
+            listener <- Stream.resource(WithStreamHandlerBuilder.make)
+            stream   <- Stream
+                          .eval(
+                            FutureLift[F]
+                              .futureLift(
+                                client.subscribeToAll(
+                                  subscriptionGroupName,
+                                  options.toOptions,
+                                  listener.listener
+                                )
+                              )
+                          )
+                          .flatMap(_ => listener.stream)
+          } yield stream
 
         def subscribeToStream(
           streamName: String,
           subscriptionGroupName: String,
-          handler: PersistentSubscriptionListener.WithHandler[F]
-        ): F[Unit] =
-          FutureLift[F]
-            .futureLift(client.subscribeToStream(streamName, subscriptionGroupName, handler.listener))
-            .withTrace
+          handler: PersistentMessage[F] => F[Unit]
+        ): Resource[F, Unit] = self.subscribeToStream(
+          streamName,
+          subscriptionGroupName,
+          PersistentSubscriptionSettings.Default,
+          handler
+        )
 
         def subscribeToStream(
           streamName: String,
           subscriptionGroupName: String,
           options: PersistentSubscriptionSettings,
-          handler: PersistentSubscriptionListener.WithHandler[F]
-        ): F[Unit] =
-          FutureLift[F]
-            .futureLift(
-              client.subscribeToStream(streamName, subscriptionGroupName, options.toOptions, handler.listener)
-            )
-            .withTrace
+          handler: PersistentMessage[F] => F[Unit]
+        ): Resource[F, Unit] =
+          for {
+            dispatcher   <- Dispatcher.sequential[F]
+            subscription <-
+              Resource
+                .make(
+                  FutureLift[F]
+                    .futureLift(
+                      client.subscribeToStream(
+                        streamName,
+                        subscriptionGroupName,
+                        options.toOptions,
+                        WithFutureHandlerBuilder[F](handler, dispatcher).listener
+                      )
+                    )
+                )(subscription => FutureLift[F].delay(subscription.stop()))
+                .void
+          } yield subscription
       })
     }(_.shutdown)
 
-  def fromClientStream[F[_]: FutureLift: MonadCancelThrow](
+  def fromClientStream[F[_]: Async: FutureLift: Parallel](
     client: EventStoreDBPersistentSubscriptionsClient
   )(
     implicit line: Line,
