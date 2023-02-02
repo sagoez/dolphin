@@ -110,7 +110,7 @@ object Main extends IOApp.Simple {
         .metered(10.seconds)
         .concurrently {
           session.subscribeToStream("cocomono").evalMap {
-            case Message.Event(_, event, _) => event.getEventData.map(new String(_)).flatMap(logger.info(_))
+            case Message.Event(_, event, _) => logger.info(new String(event.getEventData))
             case Message.Error(_, error) => logger.error(s"Received error: ${error}")
             case Message.Cancelled(_) => logger.info("Received cancellation")
             case Message.Confirmation(_) => logger.info("Received confirmation")

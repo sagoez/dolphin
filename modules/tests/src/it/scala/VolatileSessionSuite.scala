@@ -15,15 +15,15 @@ object VolatileSessionSuite extends ResourceSuite {
   test("Should be able to create a session and write a dummy event to event store database") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>
       for {
-        writeResult          <- session.appendToStream(
-                                  streamAggregateId,
-                                  s"test-event-".getBytes,
-                                  Array.emptyByteArray,
-                                  "test-data"
-                                )
-        nextExpectedRevision <- writeResult.getNextExpectedRevision
-        commitUnsigned       <- writeResult.getLogPosition.map(_.commitUnsigned)
-        prepareUnsigned      <- writeResult.getLogPosition.map(_.prepareUnsigned)
+        writeResult         <- session.appendToStream(
+                                 streamAggregateId,
+                                 s"test-event-".getBytes,
+                                 Array.emptyByteArray,
+                                 "test-data"
+                               )
+        nextExpectedRevision = writeResult.getNextExpectedRevision
+        commitUnsigned       = writeResult.getLogPosition.commitUnsigned
+        prepareUnsigned      = writeResult.getLogPosition.prepareUnsigned
       } yield expect(nextExpectedRevision == ExpectedRevision.Exact(0)) and expect(commitUnsigned > 0L) and expect(
         prepareUnsigned > 0L
       )
@@ -84,16 +84,16 @@ object VolatileSessionSuite extends ResourceSuite {
   test("Should be able to continue writing to deleted stream if scavenger process haven't been run") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>
       for {
-        _                    <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
-        _                    <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
-        _                    <- session.deleteStream(streamAggregateId)
-        writeResult          <- session.appendToStream(
-                                  streamAggregateId,
-                                  s"test-event-".getBytes,
-                                  Array.emptyByteArray,
-                                  "test-data"
-                                )
-        nextExpectedRevision <- writeResult.getNextExpectedRevision
+        _                   <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
+        _                   <- session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data")
+        _                   <- session.deleteStream(streamAggregateId)
+        writeResult         <- session.appendToStream(
+                                 streamAggregateId,
+                                 s"test-event-".getBytes,
+                                 Array.emptyByteArray,
+                                 "test-data"
+                               )
+        nextExpectedRevision = writeResult.getNextExpectedRevision
       } yield expect(nextExpectedRevision == ExpectedRevision.Exact(2))
     }
   }

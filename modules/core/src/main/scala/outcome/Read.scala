@@ -12,7 +12,6 @@ import scala.jdk.CollectionConverters.*
 import dolphin.concurrent.Position
 import dolphin.concurrent.Position.*
 
-import cats.Applicative
 import com.eventstore.dbclient
 import com.eventstore.dbclient.{RecordedEvent, ResolvedEvent}
 import fs2.Stream
@@ -57,21 +56,23 @@ sealed trait Read[F[_]] {
 
   /** When reading from a regular stream, returns the first event revision number of the stream.
     */
-  def getFirstStreamPosition: F[Long]
+  def getFirstStreamPosition: Long
 
   /** When reading from a regular stream, returns the last event revision number of the stream.
     */
-  def getLastStreamPosition: F[Long]
+  def getLastStreamPosition: Long
 
-  /** When reading from <b>all</b> stream, returns the last event position. */
-  def getLastAllStreamPosition: F[Option[Position]]
+  /** When reading from <b>all</b> stream, returns the last event position. Returns null if reading from a regular
+    * stream.
+    */
+  def getLastAllStreamPosition: Option[Position]
 }
 
 object Read {
 
-  private[dolphin] def make[F[_]: Applicative](
+  private[dolphin] def make[F[_]](
     ctx: dbclient.ReadResult
-  ) =
+  ): Read[F] =
     new Read[F] {
 
       /** Returns all the events of the read operation. */
@@ -107,15 +108,13 @@ object Read {
       def getRevision: Stream[F, Long] = getRecordedEvent.map(_.getRevision())
 
       /** When reading from a regular stream, returns the first event revision number of the stream. */
-      def getFirstStreamPosition: F[Long] = Applicative[F].pure(ctx.getFirstStreamPosition)
+      def getFirstStreamPosition: Long = ctx.getFirstStreamPosition
 
       /** When reading from a regular stream, returns the last event revision number of the stream. */
-      def getLastStreamPosition: F[Long] = Applicative[F].pure(ctx.getLastStreamPosition)
+      def getLastStreamPosition: Long = ctx.getLastStreamPosition
 
       /** When reading from <b>all</b> stream, returns the last event position. */
-      def getLastAllStreamPosition: F[Option[Position]] = Applicative[F].pure(
-        Option(ctx.getLastAllStreamPosition.toScala)
-      )
+      def getLastAllStreamPosition: Option[Position] = Option(ctx.getLastAllStreamPosition.toScala)
 
     }
 }

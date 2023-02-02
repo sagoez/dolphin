@@ -4,76 +4,74 @@
 
 package dolphin.outcome
 
-import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait Connection[F[_]] {
+sealed trait Connection {
 
   /** Number of available slots. */
-  def getAvailableSlots: F[Long]
+  def getAvailableSlots: Long
 
   /** Average events per second on this connection. */
-  def getAverageItemsPerSecond: F[Double]
+  def getAverageItemsPerSecond: Double
 
   /** Connection name. */
-  def getConnectionName: F[String]
+  def getConnectionName: String
 
   /** Number of items seen since last measurement on this connection. */
-  def getCountSinceLastMeasurement: F[Long]
+  def getCountSinceLastMeasurement: Long
 
   /** Timing measurements for the connection. */
-  def getExtraStatistics: F[Map[String, Long]]
+  def getExtraStatistics: Map[String, Long]
 
   /** Origin of this connection. */
-  def getFrom: F[String]
+  def getFrom: String
 
   /** Number of in flight messages on this connection. */
-  def getInFlightMessages: F[Long]
+  def getInFlightMessages: Long
 
   /** Total items on this connection. */
-  def getTotalItems: F[Long]
+  def getTotalItems: Long
 
   /** Connection's username. */
-  def getUsername: F[String]
+  def getUsername: String
 
 }
 
 object Connection {
 
-  private[dolphin] def make[F[_]: Applicative](
+  private[dolphin] def make(
     ctx: dbclient.PersistentSubscriptionConnectionInfo
-  ): Connection[F] =
-    new Connection[F] {
+  ): Connection =
+    new Connection {
       import scala.jdk.CollectionConverters.*
 
       /** Number of available slots. */
-      def getAvailableSlots: F[Long] = Applicative[F].pure(ctx.getAvailableSlots)
+      def getAvailableSlots: Long = ctx.getAvailableSlots
 
       /** Average events per second on this connection. */
-      def getAverageItemsPerSecond: F[Double] = Applicative[F].pure(ctx.getAverageItemsPerSecond)
+      def getAverageItemsPerSecond: Double = ctx.getAverageItemsPerSecond
 
       /** Connection name. */
-      def getConnectionName: F[String] = Applicative[F].pure(ctx.getConnectionName)
+      def getConnectionName: String = ctx.getConnectionName
 
       /** Number of items seen since last measurement on this connection. */
-      def getCountSinceLastMeasurement: F[Long] = Applicative[F].pure(ctx.getCountSinceLastMeasurement)
+      def getCountSinceLastMeasurement: Long = ctx.getCountSinceLastMeasurement
 
       /** Timing measurements for the connection. */
-      def getExtraStatistics: F[Map[String, Long]] = Applicative[F].pure(
+      def getExtraStatistics: Map[String, Long] =
         ctx.getExtraStatistics.asScala.map { case (key, value) => (key, value.longValue()) }.toMap
-      )
 
       /** Origin of this connection. */
-      def getFrom: F[String] = Applicative[F].pure(ctx.getFrom)
+      def getFrom: String = ctx.getFrom
 
       /** Number of in flight messages on this connection. */
-      def getInFlightMessages: F[Long] = Applicative[F].pure(ctx.getInFlightMessages)
+      def getInFlightMessages: Long = ctx.getInFlightMessages
 
       /** Total items on this connection. */
-      def getTotalItems: F[Long] = Applicative[F].pure(ctx.getTotalItems)
+      def getTotalItems: Long = ctx.getTotalItems
 
       /** Connection's username. */
-      def getUsername: F[String] = Applicative[F].pure(ctx.getUsername)
+      def getUsername: String = ctx.getUsername
     }
 
 }

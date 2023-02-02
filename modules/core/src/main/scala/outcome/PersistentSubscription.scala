@@ -4,47 +4,46 @@
 
 package dolphin.outcome
 
-import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait PersistentSubscription[F[_]] {
+sealed trait PersistentSubscription {
 
   /** The source of events for the subscription. */
-  def getEventSource: F[String]
+  def getEventSource: String
 
   /** The group name given on creation. */
-  def getGroupName: F[String]
+  def getGroupName: String
 
   /** The current status of the subscription. */
-  def getStatus: F[String]
+  def getStatus: String
 
   /** Active connections to the subscription. */
-  def getConnections: List[Connection[F]]
+  def getConnections: List[Connection]
 }
 
 object PersistentSubscription {
 
-  private[dolphin] def make[F[_]: Applicative](
+  private[dolphin] def make(
     ctx: dbclient.PersistentSubscriptionInfo
-  ): PersistentSubscription[F] =
-    new PersistentSubscription[F] {
+  ): PersistentSubscription =
+    new PersistentSubscription {
       import scala.jdk.CollectionConverters.*
 
       /** The source of events for the subscription. */
-      def getEventSource: F[String] = Applicative[F].pure(ctx.getEventSource)
+      def getEventSource: String = ctx.getEventSource
 
       /** The group name given on creation. */
-      def getGroupName: F[String] = Applicative[F].pure(ctx.getGroupName)
+      def getGroupName: String = ctx.getGroupName
 
       /** The current status of the subscription. */
-      def getStatus: F[String] = Applicative[F].pure(ctx.getStatus)
+      def getStatus: String = ctx.getStatus
 
       /** Active connections to the subscription. */
-      def getConnections: List[Connection[F]] = ctx
+      def getConnections: List[Connection] = ctx
         .getConnections
         .asScala
         .toList
-        .map(value => Connection.make[F](value))
+        .map(value => Connection.make(value))
     }
 
 }

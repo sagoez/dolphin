@@ -43,7 +43,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     event: EventByte,
     metadata: MetadataBye,
     `type`: String
-  ): F[Write[F]]
+  ): F[Write]
 
   /** Appends events to a given stream.
     *
@@ -64,7 +64,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     event: EventByte,
     metadata: MetadataBye,
     `type`: String
-  ): F[Write[F]]
+  ): F[Write]
 
   /** Appends events to a given stream.
     *
@@ -84,7 +84,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     options: AppendToStreamSettings,
     events: List[(EventByte, MetadataBye)],
     `type`: String
-  ): F[Write[F]]
+  ): F[Write]
 
   /** Appends events to a given stream.
     *
@@ -101,7 +101,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     streamAggregateId: String,
     events: List[(EventByte, MetadataBye)],
     `type`: String
-  ): F[Write[F]]
+  ): F[Write]
 
   /** Read events from a stream. The reading can be done forwards and backwards.
     *
@@ -198,7 +198,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String): F[Delete[F]]
+  def deleteStream(streamAggregateId: String): F[Delete]
 
   /** Makes use of Truncate before. When a stream is deleted, its Truncate before is set to the stream's current last
     * event number. When a deleted stream is read, the read will return a <i>StreamNotFound</i> error. After deleting
@@ -213,7 +213,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]]
+  def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -226,7 +226,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete[F]]
+  def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete]
 
   /** Writes a tombstone event to the stream, permanently deleting it. The stream cannot be recreated or written to
     * again. Tombstone events are written with the event's type <b>streamDeleted</b>. When a tombstoned stream is read,
@@ -237,7 +237,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     * @return
     *   A DeleteResult containing the result of the delete
     */
-  def tombstoneStream(streamAggregateId: String): F[Delete[F]]
+  def tombstoneStream(streamAggregateId: String): F[Delete]
 
 }
 

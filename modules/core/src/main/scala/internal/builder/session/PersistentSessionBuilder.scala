@@ -122,7 +122,7 @@ private[dolphin] object PersistentSessionBuilder {
         /** Gets a specific persistent subscription info to the <b>\$all</b> stream. */
         def getInfoToAll(
           subscriptionGroupName: String
-        ): F[Option[FromAllInformation[F]]] = FutureLift[F]
+        ): F[Option[FromAllInformation]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName)
@@ -133,7 +133,7 @@ private[dolphin] object PersistentSessionBuilder {
         def getInfoToAll(
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[FromAllInformation[F]]] = FutureLift[F]
+        ): F[Option[FromAllInformation]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToAll(subscriptionGroupName, options.toOptions)
@@ -144,7 +144,7 @@ private[dolphin] object PersistentSessionBuilder {
         def getInfoToStream(
           streamName: String,
           subscriptionGroupName: String
-        ): F[Option[FromStreamInformation[F]]] = FutureLift[F]
+        ): F[Option[FromStreamInformation]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName)
@@ -158,7 +158,7 @@ private[dolphin] object PersistentSessionBuilder {
           streamName: String,
           subscriptionGroupName: String,
           options: GetPersistentSubscriptionInfoSettings
-        ): F[Option[FromStreamInformation[F]]] = FutureLift[F]
+        ): F[Option[FromStreamInformation]] = FutureLift[F]
           .futureLift(
             client
               .getInfoToStream(streamName, subscriptionGroupName, options.toOptions)
@@ -168,7 +168,7 @@ private[dolphin] object PersistentSessionBuilder {
           )
 
         /** Lists all existing persistent subscriptions. */
-        def listAll: F[List[PersistentSubscription[F]]] = FutureLift[F]
+        def listAll: F[List[PersistentSubscription]] = FutureLift[F]
           .futureLift(
             client
               .listAll()
@@ -180,7 +180,7 @@ private[dolphin] object PersistentSessionBuilder {
         /** Lists all existing persistent subscriptions. */
         def listAll(
           options: ListPersistentSubscriptionsSettings
-        ): F[List[PersistentSubscription[F]]] = FutureLift[F]
+        ): F[List[PersistentSubscription]] = FutureLift[F]
           .futureLift(
             client
               .listAll(options.toOptions)
@@ -190,7 +190,7 @@ private[dolphin] object PersistentSessionBuilder {
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToAll: F[List[FromAllInformation[F]]] = FutureLift[F]
+        def listToAll: F[List[FromAllInformation]] = FutureLift[F]
           .futureLift(
             client
               .listToAll()
@@ -202,7 +202,7 @@ private[dolphin] object PersistentSessionBuilder {
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
         def listToAll(
           options: ListPersistentSubscriptionsSettings
-        ): F[List[FromAllInformation[F]]] = FutureLift[F]
+        ): F[List[FromAllInformation]] = FutureLift[F]
           .futureLift(
             client
               .listToAll(options.toOptions)
@@ -212,7 +212,7 @@ private[dolphin] object PersistentSessionBuilder {
           )
 
         /** Lists all persistent subscriptions of a specific to the <b>\$all</b> stream. */
-        def listToStream(streamName: String): F[List[FromStreamInformation[F]]] = FutureLift[F]
+        def listToStream(streamName: String): F[List[FromStreamInformation]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName)
@@ -225,7 +225,7 @@ private[dolphin] object PersistentSessionBuilder {
         def listToStream(
           streamName: String,
           options: ListPersistentSubscriptionsSettings
-        ): F[List[FromStreamInformation[F]]] = FutureLift[F]
+        ): F[List[FromStreamInformation]] = FutureLift[F]
           .futureLift(
             client
               .listToStream(streamName, options.toOptions)

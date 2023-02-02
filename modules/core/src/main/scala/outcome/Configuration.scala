@@ -8,103 +8,102 @@ import scala.concurrent.duration.FiniteDuration
 
 import dolphin.concurrent.{ConsumerStrategy, Position}
 
-import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait Configuration[F[_]] {
+sealed trait Configuration {
 
   /** The amount of time to try to checkpoint after. */
-  def getCheckpointAfter: F[FiniteDuration]
+  def getCheckpointAfter: FiniteDuration
 
   /** The amount of time in milliseconds to try to checkpoint after. */
-  def getCheckpointAfterInMs: F[Int]
+  def getCheckpointAfterInMs: Int
 
   /** The minimum number of messages to process before a checkpoint may be written. */
-  def getCheckpointLowerBound: F[Int]
+  def getCheckpointLowerBound: Int
 
   /** The maximum number of messages not checkpointed before forcing a checkpoint. */
-  def getCheckpointUpperBound: F[Int]
+  def getCheckpointUpperBound: Int
 
   /** The number of events to cache when catching up. Default 500. */
-  def getHistoryBufferSize: F[Int]
+  def getHistoryBufferSize: Int
 
   /** The size of the buffer (in-memory) listening to live messages as they happen before paging occurs. Default 500.
     */
-  def getLiveBufferSize: F[Int]
+  def getLiveBufferSize: Int
 
   /** The maximum number of retries (due to timeout) before a message is considered to be parked.
     */
-  def getMaxRetryCount: F[Int]
+  def getMaxRetryCount: Int
 
   /** The maximum number of subscribers allowed.
     */
-  def getMaxSubscriberCount: F[Int]
+  def getMaxSubscriberCount: Int
 
   /** The amount of time after which to consider a message as timed out and retried.
     */
-  def getMessageTimeout: F[FiniteDuration]
+  def getMessageTimeout: FiniteDuration
 
   /** The amount of time in milliseconds after which to consider a message as timed out and retried.
     */
-  def getMessageTimeoutMs: F[Int]
+  def getMessageTimeoutMs: Int
 
   /** The strategy to use for distributing events to client consumers.
     */
-  def getNamedConsumerStrategy: F[ConsumerStrategy]
+  def getNamedConsumerStrategy: ConsumerStrategy
 
   /** The number of events read at a time when catching up.
     */
-  def getReadBatchSize: F[Int]
+  def getReadBatchSize: Int
 
   /** Whether to track latency statistics on this subscription.
     */
-  def isExtraStatistics: F[Boolean]
+  def isExtraStatistics: Boolean
 
   /** If true, link resolution is enabled. The best way to explain link resolution is when using system projections.
     * When reading the stream <b>\$streams</b>, each event is actually a link pointing to the first event of a stream.
     * By enabling link resolution feature, EventStoreDB will also return the event targeted by the link.
     */
-  def isResolveLinkTos: F[Boolean]
+  def isResolveLinkTos: Boolean
 
   /** If true, link resolution is enabled. The best way to explain link resolution is when using system projections.
     * When reading the stream <b>\$streams</b>, each event is actually a link pointing to the first event of a stream.
     * By enabling link resolution feature, EventStoreDB will also return the event targeted by the link.
     */
-  def shouldResolveLinkTos: F[Boolean]
+  def shouldResolveLinkTos: Boolean
 }
 
 object Configuration {
 
-  sealed trait ConfigurationWithStream[F[_]] extends Configuration[F] {
+  sealed trait ConfigurationWithStream extends Configuration {
 
     /** Checks if it's the beginning of the stream. */
-    def isStart: F[Boolean]
+    def isStart: Boolean
 
     /** Checks if it's the end of the stream. */
-    def isEnd: F[Boolean]
+    def isEnd: Boolean
 
     /** Checks it's a specific position and returns the value. */
-    def position: F[Option[Long]]
+    def position: Option[Long]
   }
 
-  sealed trait ConfigurationWithAll[F[_]] extends Configuration[F] {
+  sealed trait ConfigurationWithAll extends Configuration {
 
     /** Where to start subscription from. This can be from the start of the <b>\$all</b> stream, from the end of the
       * <b>\$all</b> stream at the time of creation, or from an inclusive position in <b>\$all</b> stream.
       */
-    def getStartFromPosition: F[Option[Position]]
+    def getStartFromPosition: Option[Position]
 
     /** Checks if it's the beginning of the stream. */
-    def isStart: F[Boolean]
+    def isStart: Boolean
 
     /** Checks if it's the end of the stream. */
-    def isEnd: F[Boolean]
+    def isEnd: Boolean
   }
 
-  private[dolphin] def makeStream[F[_]: Applicative](
+  private[dolphin] def makeStream(
     ctx: dbclient.PersistentSubscriptionToStreamSettings
-  ): ConfigurationWithStream[F] =
-    new ConfigurationWithStream[F] {
+  ): ConfigurationWithStream =
+    new ConfigurationWithStream {
 
       import dolphin.concurrent.ConsumerStrategy.*
       import dolphin.concurrent.ConsumerStrategy
@@ -113,52 +112,51 @@ object Configuration {
       import scala.jdk.DurationConverters.*
       import scala.concurrent.duration.FiniteDuration
 
-      def getCheckpointAfter: F[FiniteDuration] = Applicative[F].pure(ctx.getCheckpointAfter.toScala)
+      def getCheckpointAfter: FiniteDuration = ctx.getCheckpointAfter.toScala
 
-      def getCheckpointAfterInMs: F[Int] = Applicative[F].pure(ctx.getCheckpointAfterInMs)
+      def getCheckpointAfterInMs: Int = ctx.getCheckpointAfterInMs
 
-      def getCheckpointLowerBound: F[Int] = Applicative[F].pure(ctx.getCheckpointLowerBound)
+      def getCheckpointLowerBound: Int = ctx.getCheckpointLowerBound
 
-      def getCheckpointUpperBound: F[Int] = Applicative[F].pure(ctx.getCheckpointUpperBound)
+      def getCheckpointUpperBound: Int = ctx.getCheckpointUpperBound
 
-      def getHistoryBufferSize: F[Int] = Applicative[F].pure(ctx.getHistoryBufferSize)
+      def getHistoryBufferSize: Int = ctx.getHistoryBufferSize
 
-      def getLiveBufferSize: F[Int] = Applicative[F].pure(ctx.getLiveBufferSize)
+      def getLiveBufferSize: Int = ctx.getLiveBufferSize
 
-      def getMaxRetryCount: F[Int] = Applicative[F].pure(ctx.getMaxRetryCount)
+      def getMaxRetryCount: Int = ctx.getMaxRetryCount
 
-      def getMaxSubscriberCount: F[Int] = Applicative[F].pure(ctx.getMaxSubscriberCount)
+      def getMaxSubscriberCount: Int = ctx.getMaxSubscriberCount
 
-      def getMessageTimeout: F[FiniteDuration] = Applicative[F].pure(ctx.getMessageTimeout.toScala)
+      def getMessageTimeout: FiniteDuration = ctx.getMessageTimeout.toScala
 
-      def getMessageTimeoutMs: F[Int] = Applicative[F].pure(ctx.getMessageTimeoutMs)
+      def getMessageTimeoutMs: Int = ctx.getMessageTimeoutMs
 
-      def getNamedConsumerStrategy: F[ConsumerStrategy] = Applicative[F].pure(
-        ctx.getNamedConsumerStrategy.toScala
-      )
+      def getNamedConsumerStrategy: ConsumerStrategy = ctx.getNamedConsumerStrategy.toScala
 
-      def getReadBatchSize: F[Int] = Applicative[F].pure(ctx.getReadBatchSize)
+      def getReadBatchSize: Int = ctx.getReadBatchSize
 
-      def isExtraStatistics: F[Boolean] = Applicative[F].pure(ctx.isExtraStatistics)
+      def isExtraStatistics: Boolean = ctx.isExtraStatistics
 
-      def isResolveLinkTos: F[Boolean] = Applicative[F].pure(ctx.isResolveLinkTos)
+      def isResolveLinkTos: Boolean = ctx.isResolveLinkTos
 
-      def shouldResolveLinkTos: F[Boolean] = Applicative[F].pure(ctx.shouldResolveLinkTos)
+      def shouldResolveLinkTos: Boolean = ctx.shouldResolveLinkTos
 
       /** Checks if it's the beginning of the stream. */
-      def isStart: F[Boolean] = Applicative[F].pure(ctx.getStartFrom.isStart)
+      def isStart: Boolean = ctx.getStartFrom.isStart
 
       /** Checks if it's the end of the stream. */
-      def isEnd: F[Boolean] = Applicative[F].pure(ctx.getStartFrom.isEnd)
+      def isEnd: Boolean = ctx.getStartFrom.isEnd
 
       /** Checks it's a specific position and returns the value. */
-      def position: F[Option[Long]] = Applicative[F].pure(ctx.getStartFrom.getPosition.toScala.map(_.longValue()))
+      def position: Option[Long] = ctx.getStartFrom.getPosition.toScala.map(_.longValue())
+
     }
 
-  private[dolphin] def makeAll[F[_]: Applicative](
+  private[dolphin] def makeAll(
     ctx: dbclient.PersistentSubscriptionToAllSettings
-  ): ConfigurationWithAll[F] =
-    new ConfigurationWithAll[F] {
+  ): ConfigurationWithAll =
+    new ConfigurationWithAll {
 
       import dolphin.concurrent.ConsumerStrategy.*
       import dolphin.concurrent.ConsumerStrategy
@@ -171,75 +169,73 @@ object Configuration {
       /** Where to start subscription from. This can be from the start of the <b>\$all</b> stream, from the end of the
         * <b>\$all</b> stream at the time of creation, or from an inclusive position in <b>\$all</b> stream.
         */
-      def getStartFromPosition: F[Option[Position]] = Applicative[F].pure(
-        ctx.getStartFrom.getPosition.toScala.map(_.toScala)
-      )
+      def getStartFromPosition: Option[Position] = ctx.getStartFrom.getPosition.toScala.map(_.toScala)
 
       /** Checks if it's the beginning of the stream. */
-      def isStart: F[Boolean] = Applicative[F].pure(ctx.getStartFrom.isStart)
+      def isStart: Boolean = ctx.getStartFrom.isStart
 
       /** Checks if it's the end of the stream. */
-      def isEnd: F[Boolean] = Applicative[F].pure(ctx.getStartFrom.isEnd)
+      def isEnd: Boolean = ctx.getStartFrom.isEnd
 
       /** The amount of time to try to checkpoint after. */
-      def getCheckpointAfter: F[FiniteDuration] = Applicative[F].pure(ctx.getCheckpointAfter.toScala)
+      def getCheckpointAfter: FiniteDuration = ctx.getCheckpointAfter.toScala
 
       /** The amount of time in milliseconds to try to checkpoint after. */
-      def getCheckpointAfterInMs: F[Int] = Applicative[F].pure(ctx.getCheckpointAfterInMs)
+      def getCheckpointAfterInMs: Int = ctx.getCheckpointAfterInMs
 
       /** The minimum number of messages to process before a checkpoint may be written. */
-      def getCheckpointLowerBound: F[Int] = Applicative[F].pure(ctx.getCheckpointLowerBound)
+      def getCheckpointLowerBound: Int = ctx.getCheckpointLowerBound
 
       /** The maximum number of messages not checkpointed before forcing a checkpoint. */
-      def getCheckpointUpperBound: F[Int] = Applicative[F].pure(ctx.getCheckpointUpperBound)
+      def getCheckpointUpperBound: Int = ctx.getCheckpointUpperBound
 
       /** The number of events to cache when catching up. Default 500. */
-      def getHistoryBufferSize: F[Int] = Applicative[F].pure(ctx.getHistoryBufferSize)
+      def getHistoryBufferSize: Int = ctx.getHistoryBufferSize
 
       /** The size of the buffer (in-memory) listening to live messages as they happen before paging occurs. Default
         * 500.
         */
-      def getLiveBufferSize: F[Int] = Applicative[F].pure(ctx.getLiveBufferSize)
+      def getLiveBufferSize: Int = ctx.getLiveBufferSize
 
       /** The maximum number of retries (due to timeout) before a message is considered to be parked.
         */
-      def getMaxRetryCount: F[Int] = Applicative[F].pure(ctx.getMaxRetryCount)
+      def getMaxRetryCount: Int = ctx.getMaxRetryCount
 
       /** The maximum number of subscribers allowed.
         */
-      def getMaxSubscriberCount: F[Int] = Applicative[F].pure(ctx.getMaxSubscriberCount)
+      def getMaxSubscriberCount: Int = ctx.getMaxSubscriberCount
 
       /** The amount of time after which to consider a message as timed out and retried.
         */
-      def getMessageTimeout: F[FiniteDuration] = Applicative[F].pure(ctx.getMessageTimeout.toScala)
+      def getMessageTimeout: FiniteDuration = ctx.getMessageTimeout.toScala
 
       /** The amount of time in milliseconds after which to consider a message as timed out and retried.
         */
-      def getMessageTimeoutMs: F[Int] = Applicative[F].pure(ctx.getMessageTimeoutMs)
+      def getMessageTimeoutMs: Int = ctx.getMessageTimeoutMs
 
       /** The strategy to use for distributing events to client consumers.
         */
-      def getNamedConsumerStrategy: F[ConsumerStrategy] = Applicative[F].pure(ctx.getNamedConsumerStrategy.toScala)
+      def getNamedConsumerStrategy: ConsumerStrategy = ctx.getNamedConsumerStrategy.toScala
 
       /** The number of events read at a time when catching up.
         */
-      def getReadBatchSize: F[Int] = Applicative[F].pure(ctx.getReadBatchSize)
+      def getReadBatchSize: Int = ctx.getReadBatchSize
 
       /** Whether to track latency statistics on this subscription.
         */
-      def isExtraStatistics: F[Boolean] = Applicative[F].pure(ctx.isExtraStatistics)
+      def isExtraStatistics: Boolean = ctx.isExtraStatistics
 
       /** If true, link resolution is enabled. The best way to explain link resolution is when using system projections.
         * When reading the stream <b>\$streams</b>, each event is actually a link pointing to the first event of a
         * stream. By enabling link resolution feature, EventStoreDB will also return the event targeted by the link.
         */
-      def isResolveLinkTos: F[Boolean] = Applicative[F].pure(ctx.isResolveLinkTos)
+      def isResolveLinkTos: Boolean = ctx.isResolveLinkTos
 
       /** If true, link resolution is enabled. The best way to explain link resolution is when using system projections.
         * When reading the stream <b>\$streams</b>, each event is actually a link pointing to the first event of a
         * stream. By enabling link resolution feature, EventStoreDB will also return the event targeted by the link.
         */
-      def shouldResolveLinkTos: F[Boolean] = Applicative[F].pure(ctx.shouldResolveLinkTos)
+      def shouldResolveLinkTos: Boolean = ctx.shouldResolveLinkTos
     }
 
 }

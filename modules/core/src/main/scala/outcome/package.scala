@@ -9,15 +9,7 @@ import dolphin.outcome.Stats.{StatsWithAll, StatsWithStream}
 
 package object outcome {
 
-  type FromAllInformation[F[_]] = Information[
-    F,
-    StatsWithAll[F],
-    ConfigurationWithAll[F]
-  ]
+  type FromAllInformation = Information[StatsWithAll, ConfigurationWithAll]
 
-  type FromStreamInformation[F[_]] = Information[
-    F,
-    StatsWithStream[F],
-    ConfigurationWithStream[F]
-  ]
+  type FromStreamInformation = Information[StatsWithStream, ConfigurationWithStream]
 }

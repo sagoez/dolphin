@@ -7,142 +7,135 @@ package dolphin.outcome
 import dolphin.concurrent.Position
 import dolphin.concurrent.Position.*
 
-import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait Stats[F[_]] {
+sealed trait Stats {
 
   /** Average number of events per seconds. */
-  def getAveragePerSecond: F[Int]
+  def getAveragePerSecond: Int
 
   /** Number of events seen since last measurement on this connection. */
-  def getCountSinceLastMeasurement: F[Int]
+  def getCountSinceLastMeasurement: Int
 
   /** Number of events in the live buffer. */
-  def getLiveBufferCount: F[Long]
+  def getLiveBufferCount: Long
 
   /** Current number of outstanding messages. */
-  def getOutstandingMessagesCount: F[Int]
+  def getOutstandingMessagesCount: Int
 
   /** The current number of parked messages. */
-  def getParkedMessageCount: F[Long]
+  def getParkedMessageCount: Long
 
   /** Number of events in the read buffer. */
-  def getReadBufferCount: F[Int]
+  def getReadBufferCount: Int
 
   /** Number of events in the retry buffer. */
-  def getRetryBufferCount: F[Int]
+  def getRetryBufferCount: Int
 
   /** Current in flight messages across the persistent subscription group. */
-  def getTotalInFlightMessages: F[Int]
+  def getTotalInFlightMessages: Int
 
   /** Total number of events processed by subscription. */
-  def getTotalItemsProcessed: F[Long]
+  def getTotalItemsProcessed: Long
 }
 
 object Stats {
 
-  sealed trait StatsWithStream[F[_]] extends Stats[F] {
-    def getLastCheckpointedEventRevision: F[Option[Long]]
-    def getLastKnownEventRevision: F[Option[Long]]
+  sealed trait StatsWithStream extends Stats {
+    def getLastCheckpointedEventRevision: Option[Long]
+    def getLastKnownEventRevision: Option[Long]
   }
 
-  sealed trait StatsWithAll[F[_]] extends Stats[F] {
+  sealed trait StatsWithAll extends Stats {
 
     /** The transaction log position of the last checkpoint. */
-    def getLastCheckpointedEventPosition: F[Option[Position]]
+    def getLastCheckpointedEventPosition: Option[Position]
 
     /** The transaction log position of the last known event. */
-    def getLastKnownEventPosition: F[Option[Position]]
+    def getLastKnownEventPosition: Option[Position]
   }
 
-  private[dolphin] def makeAll[F[_]: Applicative](
+  private[dolphin] def makeAll(
     ctx: dbclient.PersistentSubscriptionToAllStats
-  ): StatsWithAll[F] =
-    new StatsWithAll[F] {
+  ): StatsWithAll =
+    new StatsWithAll {
 
       import scala.jdk.OptionConverters.*
 
       /** The transaction log position of the last checkpoint. */
-      def getLastCheckpointedEventPosition: F[Option[Position]] = Applicative[F].pure(
-        ctx.getLastCheckpointedEventPosition.toScala.map(_.toScala)
-      )
+      def getLastCheckpointedEventPosition
+        : Option[Position] = ctx.getLastCheckpointedEventPosition.toScala.map(_.toScala)
 
       /** The transaction log position of the last known event. */
-      def getLastKnownEventPosition: F[Option[Position]] = Applicative[F].pure(
-        ctx.getLastKnownEventPosition.toScala.map(_.toScala)
-      )
+      def getLastKnownEventPosition: Option[Position] = ctx.getLastKnownEventPosition.toScala.map(_.toScala)
 
       /** Average number of events per seconds. */
-      def getAveragePerSecond: F[Int] = Applicative[F].pure(ctx.getAveragePerSecond)
+      def getAveragePerSecond: Int = ctx.getAveragePerSecond
 
       /** Number of events seen since last measurement on this connection. */
-      def getCountSinceLastMeasurement: F[Int] = Applicative[F].pure(ctx.getCountSinceLastMeasurement)
+      def getCountSinceLastMeasurement: Int = ctx.getCountSinceLastMeasurement
 
       /** Number of events in the live buffer. */
-      def getLiveBufferCount: F[Long] = Applicative[F].pure(ctx.getLiveBufferCount)
+      def getLiveBufferCount: Long = ctx.getLiveBufferCount
 
       /** Current number of outstanding messages. */
-      def getOutstandingMessagesCount: F[Int] = Applicative[F].pure(ctx.getOutstandingMessagesCount)
+      def getOutstandingMessagesCount: Int = ctx.getOutstandingMessagesCount
 
       /** The current number of parked messages. */
-      def getParkedMessageCount: F[Long] = Applicative[F].pure(ctx.getParkedMessageCount)
+      def getParkedMessageCount: Long = ctx.getParkedMessageCount
 
       /** Number of events in the read buffer. */
-      def getReadBufferCount: F[Int] = Applicative[F].pure(ctx.getReadBufferCount)
+      def getReadBufferCount: Int = ctx.getReadBufferCount
 
       /** Number of events in the retry buffer. */
-      def getRetryBufferCount: F[Int] = Applicative[F].pure(ctx.getRetryBufferCount)
+      def getRetryBufferCount: Int = ctx.getRetryBufferCount
 
       /** Current in flight messages across the persistent subscription group. */
-      def getTotalInFlightMessages: F[Int] = Applicative[F].pure(ctx.getTotalInFlightMessages)
+      def getTotalInFlightMessages: Int = ctx.getTotalInFlightMessages
 
       /** Total number of events processed by subscription. */
-      def getTotalItemsProcessed: F[Long] = Applicative[F].pure(ctx.getTotalItems)
+      def getTotalItemsProcessed: Long = ctx.getTotalItems
     }
 
-  private[dolphin] def makeStream[F[_]: Applicative](
+  private[dolphin] def makeStream(
     ctx: dbclient.PersistentSubscriptionToStreamStats
-  ): StatsWithStream[F] =
-    new StatsWithStream[F] {
+  ): StatsWithStream =
+    new StatsWithStream {
       import scala.jdk.OptionConverters.*
 
       /** The revision number of the last checkpoint. */
-      def getLastCheckpointedEventRevision: F[Option[Long]] = Applicative[F].pure(
-        ctx.getLastCheckpointedEventRevision.toScala.map(_.longValue())
-      )
+      def getLastCheckpointedEventRevision
+        : Option[Long] = ctx.getLastCheckpointedEventRevision.toScala.map(_.longValue())
 
       /** The revision number of the last known event. */
-      def getLastKnownEventRevision: F[Option[Long]] = Applicative[F].pure(
-        ctx.getLastKnownEventRevision.toScala.map(_.longValue())
-      )
+      def getLastKnownEventRevision: Option[Long] = ctx.getLastKnownEventRevision.toScala.map(_.longValue())
 
       /** Average number of events per seconds. */
-      def getAveragePerSecond: F[Int] = Applicative[F].pure(ctx.getAveragePerSecond)
+      def getAveragePerSecond: Int = ctx.getAveragePerSecond
 
       /** Number of events seen since last measurement on this connection. */
-      def getCountSinceLastMeasurement: F[Int] = Applicative[F].pure(ctx.getCountSinceLastMeasurement)
+      def getCountSinceLastMeasurement: Int = ctx.getCountSinceLastMeasurement
 
       /** Number of events in the live buffer. */
-      def getLiveBufferCount: F[Long] = Applicative[F].pure(ctx.getLiveBufferCount)
+      def getLiveBufferCount: Long = ctx.getLiveBufferCount
 
       /** Current number of outstanding messages. */
-      def getOutstandingMessagesCount: F[Int] = Applicative[F].pure(ctx.getOutstandingMessagesCount)
+      def getOutstandingMessagesCount: Int = ctx.getOutstandingMessagesCount
 
       /** The current number of parked messages. */
-      def getParkedMessageCount: F[Long] = Applicative[F].pure(ctx.getParkedMessageCount)
+      def getParkedMessageCount: Long = ctx.getParkedMessageCount
 
       /** Number of events in the read buffer. */
-      def getReadBufferCount: F[Int] = Applicative[F].pure(ctx.getReadBufferCount)
+      def getReadBufferCount: Int = ctx.getReadBufferCount
 
       /** Number of events in the retry buffer. */
-      def getRetryBufferCount: F[Int] = Applicative[F].pure(ctx.getRetryBufferCount)
+      def getRetryBufferCount: Int = ctx.getRetryBufferCount
 
       /** Current in flight messages across the persistent subscription group. */
-      def getTotalInFlightMessages: F[Int] = Applicative[F].pure(ctx.getTotalInFlightMessages)
+      def getTotalInFlightMessages: Int = ctx.getTotalInFlightMessages
 
       /** Total number of events processed by subscription. */
-      def getTotalItemsProcessed: F[Long] = Applicative[F].pure(ctx.getTotalItems)
+      def getTotalItemsProcessed: Long = ctx.getTotalItems
 
     }
 }

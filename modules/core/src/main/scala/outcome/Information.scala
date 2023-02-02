@@ -7,52 +7,51 @@ package dolphin.outcome
 import dolphin.outcome.Configuration.{ConfigurationWithAll, ConfigurationWithStream}
 import dolphin.outcome.Stats.{StatsWithAll, StatsWithStream}
 
-import cats.Applicative
 import com.eventstore.dbclient
 
-sealed trait Information[F[_], +Stat, +Setting] {
+sealed trait Information[+Stat, +Setting] {
 
   def stats: Stat
 
   def settings: Setting
 
-  def information: PersistentSubscription[F]
+  def information: PersistentSubscription
 
 }
 
 object Information {
 
-  private[dolphin] def makeStream[F[_]: Applicative](
+  private[dolphin] def makeStream(
     ctx: dbclient.PersistentSubscriptionToStreamInfo
-  ): FromStreamInformation[F] =
-    new FromStreamInformation[F] {
+  ): FromStreamInformation =
+    new FromStreamInformation {
 
-      def stats: StatsWithStream[F] = Stats.makeStream(
+      def stats: StatsWithStream = Stats.makeStream(
         ctx.getStats
       )
 
-      def settings: ConfigurationWithStream[F] = Configuration
+      def settings: ConfigurationWithStream = Configuration
         .makeStream(
           ctx.getSettings
         )
 
-      def information: PersistentSubscription[F] = PersistentSubscription.make(ctx)
+      def information: PersistentSubscription = PersistentSubscription.make(ctx)
     }
 
-  private[dolphin] def makeAll[F[_]: Applicative](
+  private[dolphin] def makeAll(
     ctx: dbclient.PersistentSubscriptionToAllInfo
-  ): FromAllInformation[F] =
-    new FromAllInformation[F] {
+  ): FromAllInformation =
+    new FromAllInformation {
 
-      def stats: StatsWithAll[F] = Stats.makeAll(
+      def stats: StatsWithAll = Stats.makeAll(
         ctx.getStats
       )
 
-      def settings: ConfigurationWithAll[F] = Configuration.makeAll(
+      def settings: ConfigurationWithAll = Configuration.makeAll(
         ctx.getSettings
       )
 
-      def information: PersistentSubscription[F] = PersistentSubscription.make(ctx)
+      def information: PersistentSubscription = PersistentSubscription.make(ctx)
     }
 
 }

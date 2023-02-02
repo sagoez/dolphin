@@ -3,7 +3,6 @@ package dolphin
 import dolphin.{Config, PersistentSession}
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import cats.syntax.traverse.*
 import dolphin.setting.UpdatePersistentSubscriptionToAllSettings
 import io.grpc.StatusRuntimeException
 
@@ -19,9 +18,9 @@ object PersistentSessionSuite extends ResourceSuite {
     val uuid = UUID.randomUUID().toString
     for {
       _           <- session.createToAll(uuid)
-      status      <- session.listAll.flatMap(_.map(_.getStatus).sequence)
-      groupName   <- session.listAll.flatMap(_.map(_.getGroupName).sequence)
-      eventSource <- session.listAll.flatMap(_.map(_.getEventSource).sequence)
+      status      <- session.listAll.map(_.map(_.getStatus))
+      groupName   <- session.listAll.map(_.map(_.getGroupName))
+      eventSource <- session.listAll.map(_.map(_.getEventSource))
     } yield expect(status.contains("Live")) and expect(groupName.contains(uuid)) and expect(
       eventSource.contains("$all")
     )
@@ -40,9 +39,9 @@ object PersistentSessionSuite extends ResourceSuite {
     val uuid = UUID.randomUUID().toString
     for {
       _           <- session.createToStream(uuid, uuid)
-      status      <- session.listToStream(uuid).flatMap(_.map(_.information.getStatus).sequence)
-      groupName   <- session.listToStream(uuid).flatMap(_.map(_.information.getGroupName).sequence)
-      eventSource <- session.listToStream(uuid).flatMap(_.map(_.information.getEventSource).sequence)
+      status      <- session.listToStream(uuid).map(_.map(_.information.getStatus))
+      groupName   <- session.listToStream(uuid).map(_.map(_.information.getGroupName))
+      eventSource <- session.listToStream(uuid).map(_.map(_.information.getEventSource))
     } yield expect(status.contains("Live")) and expect(groupName.contains(uuid)) and expect(
       eventSource.contains(uuid)
     )
@@ -62,7 +61,7 @@ object PersistentSessionSuite extends ResourceSuite {
     for {
       _         <- session.createToAll(uuid)
       _         <- session.deleteToAll(uuid)
-      groupName <- session.listAll.flatMap(_.map(_.getGroupName).sequence)
+      groupName <- session.listAll.map(_.map(_.getGroupName))
     } yield expect(!groupName.contains(uuid))
   }
 
@@ -71,7 +70,7 @@ object PersistentSessionSuite extends ResourceSuite {
     for {
       _         <- session.createToStream(uuid, uuid)
       _         <- session.deleteToStream(uuid, uuid)
-      groupName <- session.listToStream(uuid).flatMap(_.map(_.information.getGroupName).sequence)
+      groupName <- session.listToStream(uuid).map(_.map(_.information.getGroupName))
     } yield expect(!groupName.contains(uuid))
   }
 
@@ -82,7 +81,7 @@ object PersistentSessionSuite extends ResourceSuite {
       info   <- session.getInfoToAll(uuid)
       status <-
         info.map(_.information.getGroupName) match {
-          case Some(value) => value.map(value => expect(value == uuid))
+          case Some(value) => IO.pure(expect(value == uuid))
           case None        => IO.pure(failure("No information found"))
         }
     } yield status
@@ -95,7 +94,7 @@ object PersistentSessionSuite extends ResourceSuite {
       info   <- session.getInfoToStream(uuid, uuid)
       status <-
         info.map(_.information.getGroupName) match {
-          case Some(value) => value.map(value => expect(value == uuid))
+          case Some(value) => IO.pure(expect(value == uuid))
           case None        => IO.pure(failure("No information found"))
         }
     } yield status
@@ -109,7 +108,7 @@ object PersistentSessionSuite extends ResourceSuite {
       info   <- session.getInfoToAll(uuid)
       status <-
         info.map(_.settings.getHistoryBufferSize) match {
-          case Some(value) => value.map(value => expect(value == 400))
+          case Some(value) => IO.pure(expect(value == 400))
           case None        => IO.pure(failure("Settings do not match"))
         }
     } yield status
