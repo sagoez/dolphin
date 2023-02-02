@@ -1,4 +1,4 @@
-package dolphin.tests
+package dolphin
 
 import dolphin.{Config, VolatileSession}
 import dolphin.concurrent.ExpectedRevision

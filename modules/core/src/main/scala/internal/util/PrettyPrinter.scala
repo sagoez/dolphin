@@ -48,9 +48,9 @@ private[dolphin] object PrettyPrinter {
         case t: Throwable                        => s"An unexpected error occurred: no hint available for this error: ${t.getClass.getName}"
       }
     s"""\n
-       |🔥${message}🔥
-       |❇️${hint}❇️
-       |${metadata}
+       |🔥$message🔥
+       |❇️$hint❇️
+       |$metadata
        |\n
        |""".stripMargin
   }

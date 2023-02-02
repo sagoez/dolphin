@@ -45,25 +45,25 @@ trait PersistentConsumer[F[_]] extends Consumer[F] { self =>
   def subscriptionId: F[String]
 
   /** Acknowledges the event. */
-  def ack(event: Event[F]): F[Unit]
+  def ack(event: Event): F[Unit]
 
   /** Acknowledges the events. */
-  def ackMany(events: List[Event[F]]): F[Unit]
+  def ackMany(events: List[Event]): F[Unit]
 
   def nack(
     action: NackAction,
-    event: Event[F],
+    event: Event,
     reason: String
   ): F[Unit]
 
-  def nackMany(action: NackAction, events: List[Event[F]], reason: String): F[Unit]
+  def nackMany(action: NackAction, events: List[Event], reason: String): F[Unit]
 }
 
 object PersistentConsumer {
 
   final case class Message[F[_]](
     consumer: PersistentConsumer[F],
-    event: Event[F]
+    event: Event
   )
 
   private[dolphin] def make[F[_]: Applicative: Parallel](
@@ -76,22 +76,22 @@ object PersistentConsumer {
       override def subscriptionId: F[String] = Applicative[F].pure(suscription.getSubscriptionId)
 
       override def ack(
-        event: Event[F]
+        event: Event
       ): F[Unit] = Applicative[F].pure(suscription.ack(event.getResolvedEventUnsafe))
 
       override def ackMany(
-        events: List[Event[F]]
+        events: List[Event]
       ): F[Unit] = events.parTraverse(event => ack(event)).void
 
       override def nack(
         action: NackAction,
-        event: Event[F],
+        event: Event,
         reason: String
       ): F[Unit] = Applicative[F].pure(suscription.nack(action.toJava, reason, event.getResolvedEventUnsafe))
 
       override def nackMany(
         action: NackAction,
-        events: List[Event[F]],
+        events: List[Event],
         reason: String
       ): F[Unit] = events.parTraverse(event => nack(action, event, reason)).void
 

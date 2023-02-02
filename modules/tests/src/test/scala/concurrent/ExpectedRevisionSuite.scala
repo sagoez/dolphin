@@ -2,11 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package dolphin.concurrent.tests
+package dolphin.concurrent
 
-import dolphin.concurrent.ExpectedRevision
 import dolphin.concurrent.ExpectedRevision.*
-import dolphin.tests.generator.numericGen
+import dolphin.generator.numericGen
 
 import com.eventstore.dbclient
 import weaver.SimpleIOSuite

@@ -1,11 +1,11 @@
-package dolphin.concurrent.tests
+package dolphin.concurrent
 
 import cats.effect.{IO, Resource}
 import cats.effect.kernel.Ref
 import dolphin.Message.PersistentMessage
 import dolphin.{Config, Message, PersistentSession}
 import dolphin.setting.PersistentSubscriptionSettings
-import dolphin.tests.ResourceSuite
+import dolphin.ResourceSuite
 import fs2.Stream
 
 import java.util.UUID

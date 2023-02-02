@@ -1,4 +1,4 @@
-package dolphin.tests
+package dolphin
 
 import cats.data.Validated
 import cats.effect.IO

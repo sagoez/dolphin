@@ -1,4 +1,4 @@
-package dolphin.tests
+package dolphin
 
 import dolphin.{Config, PersistentSession}
 import cats.effect.IO

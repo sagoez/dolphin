@@ -9,13 +9,13 @@ import dolphin.Event as DEvent
 sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable { self =>
   def consumer: T
 
-  def get: Option[DEvent[F]] =
+  def get: Option[DEvent] =
     self match {
       case Message.Event(_, event, _) => Some(event)
       case _                          => None
     }
 
-  def getOrThrow: DEvent[F] =
+  def getOrThrow: DEvent =
     self match {
       case Message.Event(_, event, _) => event
       case Message.Error(_, error)    => throw error
@@ -47,7 +47,7 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
       case _                       => false
     }
 
-  def fold[A](onEvent: DEvent[F] => A, onError: Throwable => A, onCancel: A, onConfirmation: A): A =
+  def fold[A](onEvent: DEvent => A, onError: Throwable => A, onCancel: A, onConfirmation: A): A =
     self match {
       case Message.Event(_, event, _) => onEvent(event)
       case Message.Error(_, error)    => onError(error)
@@ -64,7 +64,7 @@ object Message {
 
   final case class Event[F[_], T <: Consumer[F]](
     consumer: T,
-    event: DEvent[F],
+    event: DEvent,
     retryCount: Option[Int] = None
   ) extends Message[F, T]
 

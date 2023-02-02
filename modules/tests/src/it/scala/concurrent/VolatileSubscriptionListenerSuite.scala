@@ -1,6 +1,4 @@
-// TODO: This test is flaky and needs to be fixed
-
-package dolphin.concurrent.tests
+package dolphin.concurrent
 
 import cats.effect.IO
 import cats.effect.kernel.Ref
@@ -8,7 +6,7 @@ import cats.effect.kernel.Resource
 import cats.syntax.foldable.*
 import dolphin.Message.VolatileMessage
 import dolphin.{Config, Message, VolatileConsumer, VolatileSession}
-import dolphin.tests.ResourceSuite
+import dolphin.ResourceSuite
 
 import java.util.UUID
 import scala.concurrent.duration.*
