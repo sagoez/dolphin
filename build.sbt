@@ -77,6 +77,7 @@ lazy val circe = project
     name := "dolphin-circe",
     libraryDependencies ++= Seq(
       Libraries.circeCore,
+      Libraries.circeParser
     )
   )
   .dependsOn(core)

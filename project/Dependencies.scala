@@ -26,6 +26,7 @@ object Dependencies {
     val catsCore: ModuleID           = "org.typelevel" %% "cats-core"      % V.catsCore
     val catsEffect: ModuleID         = "org.typelevel" %% "cats-effect"    % V.catsEffect
     val circeCore: ModuleID          = circe("core")
+    val circeParser: ModuleID        = circe("parser")
     val fs2Core: ModuleID            = "co.fs2"        %% "fs2-core"       % V.fs2
     val eventStoreDbClient: ModuleID = "com.eventstore" % "db-client-java" % V.eventStoreDbClient
     val sourceCode: ModuleID         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
