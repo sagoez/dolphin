@@ -37,5 +37,12 @@ private[dolphin] trait ResultSyntax {
       trace: Trace[F],
       A: MonadThrow[F]
     ): F[Unit] = withTraceAndTransformer(_ => ())
+
+    def withTraceIdentity(
+      implicit file: File,
+      line: Line,
+      trace: Trace[F],
+      A: MonadThrow[F]
+    ): F[A] = withTraceAndTransformer(identity)
   }
 }

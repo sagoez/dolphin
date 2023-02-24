@@ -20,9 +20,9 @@ trait VolatileConsumer[F[_]] extends Consumer[F]
 
 object VolatileConsumer {
 
-  private[dolphin] def make[F[_]: Applicative](suscription: Subscription): VolatileConsumer[F] =
+  private[dolphin] def make[F[_]: Applicative](subscription: Subscription): VolatileConsumer[F] =
     new VolatileConsumer[F] {
-      override def stop: F[Unit] = Applicative[F].pure(suscription.stop())
+      override def stop: F[Unit] = Applicative[F].pure(subscription.stop())
 
       override def noop: F[Unit] = Applicative[F].unit
     }
@@ -67,17 +67,17 @@ object PersistentConsumer {
   )
 
   private[dolphin] def make[F[_]: Applicative: Parallel](
-    suscription: PersistentSubscription
+    subscription: PersistentSubscription
   ): PersistentConsumer[F] =
     new PersistentConsumer[F] {
 
-      override def stop: F[Unit] = Applicative[F].pure(suscription.stop())
+      override def stop: F[Unit] = Applicative[F].pure(subscription.stop())
 
-      override def subscriptionId: F[String] = Applicative[F].pure(suscription.getSubscriptionId)
+      override def subscriptionId: F[String] = Applicative[F].pure(subscription.getSubscriptionId)
 
       override def ack(
         event: Event
-      ): F[Unit] = Applicative[F].pure(suscription.ack(event.getResolvedEventUnsafe))
+      ): F[Unit] = Applicative[F].pure(subscription.ack(event.getResolvedEventUnsafe))
 
       override def ackMany(
         events: List[Event]
@@ -87,7 +87,7 @@ object PersistentConsumer {
         action: NackAction,
         event: Event,
         reason: String
-      ): F[Unit] = Applicative[F].pure(suscription.nack(action.toJava, reason, event.getResolvedEventUnsafe))
+      ): F[Unit] = Applicative[F].pure(subscription.nack(action.toJava, reason, event.getResolvedEventUnsafe))
 
       override def nackMany(
         action: NackAction,

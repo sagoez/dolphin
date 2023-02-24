@@ -239,6 +239,12 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def tombstoneStream(streamAggregateId: String): F[Delete]
 
+  /** If true, the connection is closed and all resources are released. */
+  def isShutdown: Boolean
+
+  /** Closes the connection and releases all resources. */
+  def shutdown: F[Unit]
+
 }
 
 object VolatileSession {

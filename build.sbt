@@ -37,7 +37,8 @@ lazy val commonSettings = Seq(
     "-Wconf:cat=unused:error",
     "-deprecation"
   ),
-  scalafmtOnCompile := false
+  scalafmtOnCompile := false,
+  autoAPIMappings   := true
 )
 
 ThisBuild / githubWorkflowBuildPreamble ++=

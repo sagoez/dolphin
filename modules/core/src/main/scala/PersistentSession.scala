@@ -297,6 +297,12 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     options: PersistentSubscriptionSettings,
     handler: PersistentMessage[F] => F[Unit]
   ): Resource[F, Unit]
+
+  /** If true, the connection is closed and all resources are released. */
+  def isShutdown: Boolean
+
+  /** Closes the connection and releases all resources. */
+  def shutdown: F[Unit]
 }
 
 object PersistentSession {
