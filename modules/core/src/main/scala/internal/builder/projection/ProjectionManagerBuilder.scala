@@ -86,7 +86,8 @@ private[dolphin] object ProjectionManagerBuilder {
           projectionName: String,
           f: TypeFactory => JavaType,
           settings: GetProjectionResultSettings
-        ): F[T] = ???
+        ): F[T] = FutureLift[F]
+          .futureLift(client.getResult(projectionName, f(_), settings.toOptions))
 
         def getState[T](
           projectionName: String,
@@ -107,7 +108,8 @@ private[dolphin] object ProjectionManagerBuilder {
           projectionName: String,
           f: TypeFactory => JavaType,
           settings: GetProjectionStateSettings
-        ): F[T] = ???
+        ): F[T] = FutureLift[F]
+          .futureLift(client.getState(projectionName, f(_), settings.toOptions))
 
         def getStatistics(
           projectionName: String

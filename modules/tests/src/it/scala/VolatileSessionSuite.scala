@@ -10,7 +10,7 @@ import fs2.Stream
 object VolatileSessionSuite extends ResourceSuite {
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.default)
+  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
 
   test("Should be able to create a session and write a dummy event to event store database") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>

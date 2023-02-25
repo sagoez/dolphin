@@ -8,11 +8,15 @@ import java.util.concurrent.CompletableFuture
 
 import scala.util.{Failure, Success, Try}
 
-import dolphin.{CommitUnsigned, PrepareUnsigned}
+import dolphin.VolatileConsumer
+import dolphin.concurrent.Position
+import dolphin.concurrent.Position.*
 
+import cats.effect.kernel.{Async, Resource}
+import cats.effect.std.Dispatcher
 import com.eventstore.dbclient.{
   Checkpointer,
-  Position,
+  Position => PositionJava,
   Subscription,
   SubscriptionFilter => SubscriptionFilterJava,
   SubscriptionFilterBuilder
@@ -38,27 +42,34 @@ sealed abstract case class SubscriptionFilterSettings(
   def withStreamNamePrefix(prefix: String): SubscriptionFilterSettings =
     new SubscriptionFilterSettings(() => keepOrModifyBuilder(Try(subscriptionFilter().addStreamNamePrefix(prefix)))) {}
 
-  /** Calls a callback everytime a checkpoint is reached. */
-  def withCheckpoint(
-    onCheckpointF: (CommitUnsigned, PrepareUnsigned) => Unit
-  ): SubscriptionFilterSettings = withCheckpoint(onCheckpointF, 1)
+  /** Calls a callback everytime a checkpoint is reached, with a default interval multiplier of 1.
+    *
+    * </br> If a checkpoint is set, a [[cats.effect.kernel.Resource]] is returned, this is because the checkpoint use a
+    * [[cats.effect.std.Dispatcher]] to run the callback.
+    */
+  def withCheckpoint[F[_]: Async](
+    checkpointer: (VolatileConsumer[F], Position) => F[Unit]
+  ): Resource[F, SubscriptionFilterSettings] = withCheckpoint(checkpointer, 1)
 
-  /** Calls a callback everytime a checkpoint is reached. */
-  def withCheckpoint(
-    onCheckpointF: (CommitUnsigned, PrepareUnsigned) => Unit,
+  /** Calls a callback everytime a checkpoint is reached.
+    *
+    * </br> If a checkpoint is set, a [[cats.effect.kernel.Resource]] is returned, this is because the checkpoint use a
+    * [[cats.effect.std.Dispatcher]] to run the callback.
+    */
+  def withCheckpoint[F[_]: Async](
+    checkpointer: (VolatileConsumer[F], Position) => F[Unit],
     intervalMultiplierUnsigned: Int
-  ): SubscriptionFilterSettings = {
-    // TODO: Use Dispatcher to run the callback
-
-    val checkpoint: Checkpointer =
+  ): Resource[F, SubscriptionFilterSettings] = Dispatcher.sequential.map { dispatcher =>
+    val checkpoint =
       new Checkpointer() {
-        override def onCheckpoint(subscription: Subscription, position: Position): CompletableFuture[Void] = {
-
-          onCheckpointF(position.getCommitUnsigned, position.getPrepareUnsigned)
-
-          null
-        }
-
+        override def onCheckpoint(
+          subscription: Subscription,
+          position: PositionJava
+        ): CompletableFuture[Void] = dispatcher
+          .unsafeToCompletableFuture(
+            checkpointer(VolatileConsumer.make(subscription), position.toScala)
+          )
+          .thenApply(_ => null.asInstanceOf[Void])
       }
     new SubscriptionFilterSettings(() =>
       subscriptionFilter().withCheckpointer(checkpoint, intervalMultiplierUnsigned)

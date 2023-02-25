@@ -169,7 +169,7 @@ object Config {
     * @return
     *   a new [[Config]] instance.
     */
-  def default: Config =
+  val Default: Config =
     Config
       .Builder
       .withHost("localhost")

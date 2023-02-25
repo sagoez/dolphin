@@ -16,14 +16,21 @@ import cats.effect.kernel.Resource
 import fs2.Stream
 import sourcecode.{File, Line}
 
-/** The main entry point for the EventStoreDB client, operates with catchup subscriptions.
+/** The main entry point for the EventStoreDB client for <a
+  * href="https://developers.eventstore.com/server/v22.10/streams.html">catching up subscriptions</a>.
   *
-  * Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
+  * <br/> Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
   * EventStoreDB. Many threads can use the EventStoreDB client simultaneously, or a single thread can make many
   * asynchronous requests.
   *
-  * Subscriptions are created by calling subscribeToStream or subscribeToAll. The returned Subscription object is
-  * managed by the client.
+  * <br/> The client allows you to perform operations on streams, such as <a
+  * href="https://developers.eventstore.com/clients/grpc/reading-events.html#reading-from-a-stream">reading</a>, <a
+  * href="https://developers.eventstore.com/clients/grpc/appending-events.html#append-your-first-event">writing</a>,
+  * subscribing, and deleting.
+  *
+  * <br/> You can read more about catch up subscriptions in the server <a
+  * href="https://developers.eventstore.com/clients/grpc/subscriptions.html#subscribing-from-the-start">official
+  * documentation</a>.
   */
 trait VolatileSession[F[_]] extends Serializable { self =>
 

@@ -15,7 +15,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
 
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.default)
+  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
 
   test("onEvent with handler should be able to stop appends properly") { session =>
     val uuid = UUID.randomUUID().toString

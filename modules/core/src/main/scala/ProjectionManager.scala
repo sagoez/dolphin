@@ -6,20 +6,7 @@ package dolphin
 
 import dolphin.internal.builder.client.{ProjectionManagerBuilder, ProjectionManagerClientBuilder}
 import dolphin.outcome.ProjectionDetails
-import dolphin.setting.{
-  AbortProjectionSettings,
-  CreateProjectionSettings,
-  DeleteProjectionSettings,
-  DisableProjectionSettings,
-  EnableProjectionSettings,
-  GetProjectionResultSettings,
-  GetProjectionStateSettings,
-  GetProjectionStatisticsSettings,
-  ListProjectionsSettings,
-  ResetProjectionSettings,
-  RestartProjectionSubsystemSettings,
-  UpdateProjectionSettings
-}
+import dolphin.setting.*
 
 import cats.Parallel
 import cats.effect.Async
@@ -29,6 +16,33 @@ import com.fasterxml.jackson.databind.`type`.TypeFactory
 import fs2.Stream
 import sourcecode.{File, Line}
 
+/** <a href="https://developers.eventstore.com/server/v22.10/projections.html#introduction">Projections</a> is an
+  * EventStoreDB subsystem that lets you append new events or link existing events to streams in a reactive manner.
+  *
+  * <br/> Projections are good at solving one specific query type, a category known as <i>temporal correlation
+  * queries</i>. This query type is common in business systems and few can execute these queries well. Projections
+  * support the concept of continuous queries.
+  *
+  * <br/> When running a projection you can choose whether the query should run and give you all results present, or
+  * whether the query should continue running into the future finding new results as they happen and updating its result
+  * set.
+  *
+  * <br/> Keep in mind that all projections emit events as a reaction to events that they process. We call this effect
+  * write amplification because emitting new events or link events creates additional load on the server IO.
+  *
+  * <br/> Streams where projections emit events cannot be used to append events from applications. When this happens,
+  * the projection will detect events not produced by the projection itself and it will break.
+  *
+  * <br/> EventStoreDB ships with five built in projections:
+  *   - By Category: <b>\$by_category</b>
+  *   - By Event Type: <b>\$by_event_type</b>
+  *   - By Correlation ID: <b>\$by_correlation_id</b>
+  *   - Stream by Category: <b>\$stream_by_category</b>
+  *   - Streams: <b>\$streams</b>
+  *
+  * <br/> You can find more information about these projections in the <a
+  * href="https://developers.eventstore.com/clients/grpc/projections.html">official documentation</a>.
+  */
 trait ProjectionManager[F[_]] {
 
   /** Stops the projection without writing a checkpoint. This can be used to disable a projection that has been faulted.
@@ -132,10 +146,14 @@ trait ProjectionManager[F[_]] {
   ): F[T]
 
   /** Gets the projection's result.
+    *
     * @param projectionName
     *   The name of the projection to get the result for.
     * @param f
-    *   A function that takes a [[TypeFactory]] and returns a [[JavaType]].
+    *   A function that takes a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/type/TypeFactory.html">TypeFactory</a>
+    *   and returns a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/JavaType.html">JavaType<a>.
     * @tparam T
     *   The type of the result.
     */
@@ -149,7 +167,10 @@ trait ProjectionManager[F[_]] {
     * @param projectionName
     *   The name of the projection to get the result for.
     * @param f
-    *   A function that takes a [[TypeFactory]] and returns a [[JavaType]].
+    *   A function that takes a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/type/TypeFactory.html">TypeFactory</a>
+    *   and returns a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/JavaType.html">JavaType<a>.
     * @param settings
     *   The settings to use for this operation.
     * @tparam T
@@ -188,10 +209,14 @@ trait ProjectionManager[F[_]] {
   ): F[T]
 
   /** Gets the state of the projection.
+    *
     * @param projectionName
     *   The name of the projection to get the state for.
     * @param f
-    *   A function that takes a [[TypeFactory]] and returns a [[JavaType]].
+    *   A function that takes a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/type/TypeFactory.html">TypeFactory</a>
+    *   and returns a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/JavaType.html">JavaType<a>.
     * @tparam T
     *   The type of the state.
     */
@@ -201,10 +226,14 @@ trait ProjectionManager[F[_]] {
   ): F[T]
 
   /** Gets the state of the projection.
+    *
     * @param projectionName
     *   The name of the projection to get the state for.
     * @param f
-    *   A function that takes a [[TypeFactory]] and returns a [[JavaType]].
+    *   A function that takes a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/type/TypeFactory.html">TypeFactory</a>
+    *   and returns a <a
+    *   href="https://fasterxml.github.io/jackson-databind/javadoc/2.7/com/fasterxml/jackson/databind/JavaType.html">JavaType<a>.
     * @param settings
     *   The settings to use for this operation.
     * @tparam T

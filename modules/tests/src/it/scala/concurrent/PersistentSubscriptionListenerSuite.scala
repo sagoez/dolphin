@@ -13,7 +13,7 @@ import scala.concurrent.duration.DurationInt
 
 object PersistentSubscriptionListenerSuite extends ResourceSuite {
 
-  def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.default)
+  def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.Default)
 
   override type Res = PersistentSession[IO]
 
