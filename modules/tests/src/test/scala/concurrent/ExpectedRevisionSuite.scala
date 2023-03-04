@@ -5,7 +5,7 @@
 package dolphin.concurrent
 
 import dolphin.concurrent.ExpectedRevision.*
-import dolphin.generator.numericGen
+import dolphin.suite.generator.numericGen
 
 import com.eventstore.dbclient
 import weaver.SimpleIOSuite

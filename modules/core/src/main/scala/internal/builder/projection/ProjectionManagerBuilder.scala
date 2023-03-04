@@ -5,13 +5,11 @@
 package dolphin.internal.builder.client
 
 import scala.jdk.CollectionConverters.*
-
 import dolphin.internal.syntax.all.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.ProjectionDetails
 import dolphin.setting.*
-import dolphin.{ProjectionManager, Trace}
-
+import dolphin.{ProjectionManager, Stateful, Trace}
 import cats.Parallel
 import cats.effect.Async
 import cats.effect.kernel.Resource
@@ -67,12 +65,16 @@ private[dolphin] object ProjectionManagerBuilder {
             .futureLift(client.enable(projectionName, settings.toOptions))
             .withTrace
 
-        def getResult[T](
+        def getResult[T <: Stateful[?]](
           projectionName: String,
           `type`: Class[T]
         ): F[T] = self.getResult(projectionName, `type`, GetProjectionResultSettings.Default)
 
-        def getResult[T](projectionName: String, `type`: Class[T], settings: GetProjectionResultSettings): F[T] =
+        def getResult[T <: Stateful[?]](
+          projectionName: String,
+          `type`: Class[T],
+          settings: GetProjectionResultSettings
+        ): F[T] =
           FutureLift[F]
             .futureLift(client.getResult(projectionName, `type`, settings.toOptions))
             .withTraceIdentity
@@ -89,12 +91,16 @@ private[dolphin] object ProjectionManagerBuilder {
         ): F[T] = FutureLift[F]
           .futureLift(client.getResult(projectionName, f(_), settings.toOptions))
 
-        def getState[T](
+        def getState[T <: Stateful[?]](
           projectionName: String,
           `type`: Class[T]
         ): F[T] = self.getState(projectionName, `type`, GetProjectionStateSettings.Default)
 
-        def getState[T](projectionName: String, `type`: Class[T], settings: GetProjectionStateSettings): F[T] =
+        def getState[T <: Stateful[?]](
+          projectionName: String,
+          `type`: Class[T],
+          settings: GetProjectionStateSettings
+        ): F[T] =
           FutureLift[F]
             .futureLift(client.getState(projectionName, `type`, settings.toOptions))
             .withTraceIdentity

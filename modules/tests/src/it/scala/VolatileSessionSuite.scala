@@ -1,11 +1,11 @@
 package dolphin
 
-import dolphin.{Config, VolatileSession}
 import dolphin.concurrent.ExpectedRevision
 import dolphin.setting.ReadFromStreamSettings
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import fs2.Stream
+import dolphin.suite.{ResourceSuite, generator}
 
 object VolatileSessionSuite extends ResourceSuite {
   override type Res = VolatileSession[IO]

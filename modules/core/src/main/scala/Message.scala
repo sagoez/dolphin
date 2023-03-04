@@ -6,7 +6,10 @@ package dolphin
 
 import dolphin.Event as DEvent
 
+import cats.{Applicative, Monad}
+
 sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable { self =>
+
   def consumer: T
 
   def get: Option[DEvent] =
@@ -52,6 +55,11 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
       case _: Message.Cancelled[F, T]    => onCancel
       case _: Message.Confirmation[F, T] => onConfirmation
     }
+
+  def flatTap(f: Message[F, T] => F[Unit])(implicit F: Monad[F]): F[Message[F, T]] =
+    F.flatMap(f(self))(_ => F.pure(self))
+
+  def map[A](f: Message[F, T] => A)(implicit F: Applicative[F]): F[A] = F.pure(f(self))
 
 }
 

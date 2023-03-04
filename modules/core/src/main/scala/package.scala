@@ -9,6 +9,8 @@ package object dolphin {
   type EventByte   = Array[Byte]
   type MetadataBye = Array[Byte]
 
+  type MessageHandler[F[_], T <: Message[F, ?]] = T => F[Unit]
+
   type CommitUnsigned  = Long
   type PrepareUnsigned = Long
 

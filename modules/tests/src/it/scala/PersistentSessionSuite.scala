@@ -1,10 +1,10 @@
 package dolphin
 
-import dolphin.{Config, PersistentSession}
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import dolphin.setting.UpdatePersistentSubscriptionToAllSettings
 import io.grpc.StatusRuntimeException
+import dolphin.suite.ResourceSuite
 
 import java.util.UUID
 

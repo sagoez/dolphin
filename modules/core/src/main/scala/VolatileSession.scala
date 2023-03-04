@@ -139,7 +139,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    handler: VolatileMessage[F] => F[Unit]
+    handler: MessageHandler[F, VolatileMessage[F]]
   ): Resource[F, Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -158,7 +158,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def subscribeToStream(
     streamAggregateId: String,
     options: SubscriptionToStreamSettings,
-    handler: VolatileMessage[F] => F[Unit]
+    handler: MessageHandler[F, VolatileMessage[F]]
   ): Resource[F, Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.

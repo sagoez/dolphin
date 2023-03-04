@@ -143,7 +143,7 @@ object Config {
 
     def build(
       implicit @implicitNotFound(
-        "You must specify a host, port and tls. Try using ConfigBuilder.withHost(...).withPort(...).withTls(...) instead."
+        "You must specify a host, port and tls. Try using Config.Default instead."
       ) ev: B =:= Base.Required
     ): Config =
       new Config {

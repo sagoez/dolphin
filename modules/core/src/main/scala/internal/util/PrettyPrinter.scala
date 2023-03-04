@@ -33,7 +33,7 @@ private[dolphin] object PrettyPrinter {
     val hint =
       error match {
         case _: StreamNotFoundException          => "The stream you are trying to read from does not exist"
-        // case _: StreamDeletedException           => "The stream you are trying to read from has been deleted" // Uncomment when the next client version is released
+        case e: StreamDeletedException           => s"The stream you are trying to read from has been deleted: ${e.getStreamName}"
         case _: NotLeaderException               => "The request needing a leader node was executed on a follower node."
         case _: ResourceNotFoundException        =>
           "The resource you are trying to access does not exist or you have no access. Could only happen when a request was performed through HTTP."
@@ -41,8 +41,8 @@ private[dolphin] object PrettyPrinter {
         case _: ConnectionShutdownException      =>
           "You are trying to perform an operation on a connection that has been shutdown."
         case _: UnsupportedFeatureException      => "The feature you are trying to use is not supported by the server."
-        case _: WrongExpectedVersionException    =>
-          "The expected version you provided does not match the current version of the stream, this can happen when relying on optimistic concurrency."
+        case e: WrongExpectedVersionException    =>
+          s"The expected version you provided does not match the current version of the stream. Expected version: ${e.getNextExpectedRevision}, current version: ${e.getActualVersion}, stream: ${e.getStreamName}"
         case _: ConnectionStringParsingException =>
           "The connection string you provided is not valid. Please check the documentation for more information."
         case t: Throwable                        => s"An unexpected error occurred: no hint available for this error: ${t.getClass.getName}"

@@ -8,16 +8,16 @@
 ## Table of Contents
 
 - [Dolphin](#dolphin)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Disclaimer](#disclaimer)
-  - [Installation](#installation)
-  - [Usage](#usage)
-    - [Append to a stream](#append-to-a-stream)
-    - [Read from a stream](#read-from-a-stream)
-    - [Subscribe to a stream](#subscribe-to-a-stream)
-  - [Roadmap](#roadmap)
-  - [Note](#note)
+    - [Table of Contents](#table-of-contents)
+    - [Introduction](#introduction)
+    - [Disclaimer](#disclaimer)
+    - [Installation](#installation)
+    - [Usage](#usage)
+        - [Append to a stream](#append-to-a-stream)
+        - [Read from a stream](#read-from-a-stream)
+        - [Subscribe to a stream](#subscribe-to-a-stream)
+    - [Roadmap](#roadmap)
+    - [Note](#note)
 
 ## Introduction
 
@@ -27,7 +27,7 @@ performance, scalability, and reliability.
 
 ## Disclaimer
 
- ⚠️ Dolphin is a Scala wrapper for the Java client of EventStoreDB. It is a work in progress and is not ready nor
+⚠️ Dolphin is a Scala wrapper for the Java client of EventStoreDB. It is a work in progress and is not ready nor
 recommended for production use.
 
 ## Installation
@@ -42,7 +42,8 @@ libraryDependencies ++= Seq("io.github.lapsushq" %% "dolphin-core" % "0.0-`Lates
 
 EventStoreDB distinguishes between a normal session and a persistent session. A normal session is a volatile session,
 which means that reads operate on the disk without the possibility of acknowledging. A persistent session, in turn,
-is a session that reads from the disk and provides a mechanism to acknowledge the read, in turn, you can not write with this type of subscription. This means that a persistent
+is a session that reads from the disk and provides a mechanism to acknowledge the read, in turn, you can not write with
+this type of subscription. This means that a persistent
 session could perform slower than the normal session.
 
 ### Append to a stream
@@ -61,7 +62,7 @@ object Main extends IOApp.Simple {
   override def run: IO[Unit] =
     (for {
       session <- VolatileSession.stream[IO](Config.Default)
-      _       <- Stream.eval(
+      _ <- Stream.eval(
         session.appendToStream(
           "ShoppingCart",
           """{"id": "9b188885-04a8-4ae0-b8a4-74a82c17d2ec", "value": 1}""".getBytes,
@@ -70,8 +71,8 @@ object Main extends IOApp.Simple {
         )
       )
     } yield ())
-            .compile
-            .drain
+      .compile
+      .drain
 }
 ```
 
@@ -95,12 +96,12 @@ object Main extends IOApp.Simple {
   override def run: IO[Unit] =
     (for {
       session <- VolatileSession.stream[IO](Config.Default)
-      read    <- Stream.eval(session.readStream("ShoppingCart", ReadFromStreamSettings.Default))
-      data    <- read.getEventData
-      _       <- Stream.eval(IO.println(new String(data))) // {"id": "9b188885-04a8-4ae0-b8a4-74a82c17d2ec", "value": 1}
+      read <- Stream.eval(session.readStream("ShoppingCart", ReadFromStreamSettings.Default))
+      data <- read.getEventData
+      _ <- Stream.eval(IO.println(new String(data))) // {"id": "9b188885-04a8-4ae0-b8a4-74a82c17d2ec", "value": 1}
     } yield ())
-            .compile
-            .drain
+      .compile
+      .drain
 }
 ```
 
@@ -110,7 +111,9 @@ created with a persistent session).
 
 ### Subscribe to a stream
 
-There are two ways to subscribe to a stream. The first way is to use the `subscribeToStream` method on the session. This will return a `Stream` of `Message` objects. The second way is to use the `subscribeToStream` method on the session and provide a `MessageHandler`. This will return a `Resource` of `Unit`.
+There are two ways to subscribe to a stream. The first way is to use the `subscribeToStream` method on the session. This
+will return a `Stream` of `Message` objects. The second way is to use the `subscribeToStream` method on the session and
+provide a `MessageHandler`. This will return a `Resource` of `Unit`.
 
 - With `subscribeToStream` of `Stream`:
 
@@ -131,7 +134,7 @@ object Main extends IOApp.Simple {
   private def program: Stream[IO, Unit] =
     for {
       session <- VolatileSession.stream[IO](Config.Default)
-      _       <- Stream
+      _ <- Stream
         .iterateEval(UUID.randomUUID())(_ => IO(UUID.randomUUID()))
         .evalMap { uuid =>
           session
@@ -146,9 +149,9 @@ object Main extends IOApp.Simple {
         .concurrently {
           session.subscribeToStream("ShoppingCart").evalMap {
             case Message.Event(_, event, _) => logger.info(new String(event.getEventData))
-            case Message.Error(_, error)    => logger.error(s"Received error: ${error}")
-            case Message.Cancelled(_)       => logger.info("Received cancellation")
-            case Message.Confirmation(_)    => logger.info("Received confirmation")
+            case Message.Error(_, error) => logger.error(s"Received error: ${error}")
+            case Message.Cancelled(_) => logger.info("Received cancellation")
+            case Message.Confirmation(_) => logger.info("Received confirmation")
           }
         }
     } yield ()
@@ -192,6 +195,16 @@ object Main extends IOApp.Simple {
 }
 ```
 
+### Projections
+
+A projection is a mechanism to transform the events in a stream into a new stream. The new stream can be used to
+provide a read model for the application. EventStoreDB provides a mechanism to create a projection and manage it.
+
+
+```scala
+
+
+```
 ## Roadmap
 
 - [x] Add a docker-compose file to run EventStoreDB.
@@ -205,11 +218,12 @@ object Main extends IOApp.Simple {
 - [x] Write documentation on how to use the wrapper.
 - [x] Improve the way we handle the subscription listener.
 - [x] Provide Stream[F, Event[...]] instead of a Resource[F, ...] for the subscription.
+- [ ] Improve ProjectionManager and write tests for it.
 - [ ] Improve documentation, i.e. mini-website.
 - [ ] Keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
 - [ ] Check how to test and improve performance if needed.
 - [ ] Revisit design decisions and refactor if needed.
-
+- [ ] Try to make queries more type safe and programmatic.
 ## Note
 
 - This project is not affiliated with EventStoreDB. For further information about EventStoreDB, please

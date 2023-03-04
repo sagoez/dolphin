@@ -7,7 +7,6 @@ package dolphin
 import dolphin.internal.builder.client.{ProjectionManagerBuilder, ProjectionManagerClientBuilder}
 import dolphin.outcome.ProjectionDetails
 import dolphin.setting.*
-
 import cats.Parallel
 import cats.effect.Async
 import cats.effect.kernel.Resource
@@ -15,6 +14,8 @@ import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.`type`.TypeFactory
 import fs2.Stream
 import sourcecode.{File, Line}
+
+// TODO: Figure out a to make `ProjectionManager` API easier to use (avoid using Jackson, JavaType, etc.)
 
 /** <a href="https://developers.eventstore.com/server/v22.10/projections.html#introduction">Projections</a> is an
   * EventStoreDB subsystem that lets you append new events or link existing events to streams in a reactive manner.
@@ -32,6 +33,10 @@ import sourcecode.{File, Line}
   *
   * <br/> Streams where projections emit events cannot be used to append events from applications. When this happens,
   * the projection will detect events not produced by the projection itself and it will break.
+  *
+  * <br/> <a href="https://developers.eventstore.com/server/v5/projections.html#user-defined-projections">User defined
+  * projections</a> only work with events stored in JSON format. Use cases for custom projections include aggregation
+  * (stateful projections), transformations and partitioning.
   *
   * <br/> EventStoreDB ships with five built in projections:
   *   - By Category: <b>\$by_category</b>
@@ -60,20 +65,126 @@ trait ProjectionManager[F[_]] {
   def abort(projectionName: String, settings: AbortProjectionSettings): F[Unit]
 
   /** Creates a new projection in the stopped state. Enable needs to be called separately to start the projection.
+    *
     * @param projectionName
     *   The name of the projection to create.
     * @param query
     *   The query to create the projection with.
+    *
+    * ==Description==
+    *
+    * <br/>The query must be a valid JavaScript function. This function can have many forms, but the simplest way to
+    * reason about it is to think of it as a function that reads events from a stream (`fromStream`), reads from the
+    * given stream when a specific condition is met (`when`).
+    *
+    * <br/>Following that simple rule, understanding the query becomes much easier. All queries follow the following
+    * pattern:
+    *
+    * <br/>
+    * {{{
+    *   fromStream('stream-name')
+    *   .when({
+    *     $init: function() {
+    *      return { count: 0 };
+    *     },
+    *     $any: function(s, e) {
+    *       s.count += 1;
+    *     }
+    *     // ...
+    * }}}
+    *
+    * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
+    * valid stream name. The query then calls `when` which takes an object with different event handlers:
+    *
+    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *     the state of the projection.
+    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *     the projection.
+    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
+    *     is only used when the projection is partitioned.
+    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *     `foreachStream`.
+    *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
+    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *
+    * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
+    * handler. The event provided through the handler contains the following properties:
+    *
+    *   - `isJson` - A boolean indicating if the event is a JSON event.
+    *   - `metadataRaw` - The raw metadata of the event.
+    *   - `bodyRaw` - The raw body of the event.
+    *   - `data` - The data of the event.
+    *   - `body` - The body of the event.
+    *   - `linkMetadataRaw` - The raw metadata of the link event.
+    *   - `eventType` - The event type of the event.
+    *
+    * Queries can get more complex than what's explained here. For more information, see the
+    * [[https://developers.eventstore.com/server/v5/projections.html#user-defined-projections-api]].
     */
   def create(projectionName: String, query: String): F[Unit]
 
   /** Creates a new projection in the stopped state. Enable needs to be called separately to start the projection.
+    *
     * @param projectionName
     *   The name of the projection to create.
     * @param query
     *   The query to create the projection with.
     * @param settings
     *   The settings to use for this operation.
+    *
+    * ==Description==
+    *
+    * <br/>The query must be a valid JavaScript function. This function can have many forms, but the simplest way to
+    * reason about it is to think of it as a function that reads events from a stream (`fromStream`), reads from the
+    * given stream when a specific condition is met (`when`).
+    *
+    * <br/>Following that simple rule, understanding the query becomes much easier. All queries follow the following
+    * pattern:
+    *
+    * <br/>
+    * {{{
+    *   fromStream('stream-name')
+    *   .when({
+    *     $init: function() {
+    *      return { count: 0 };
+    *     },
+    *     $any: function(s, e) {
+    *       s.count += 1;
+    *     }
+    *     // ...
+    * }}}
+    *
+    * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
+    * valid stream name. The query then calls `when` which takes an object with different event handlers:
+    *
+    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *     the state of the projection.
+    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *     the projection.
+    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
+    *     is only used when the projection is partitioned.
+    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *     `foreachStream`.
+    *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
+    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *
+    * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
+    * handler. The event provided through the handler contains the following properties:
+    *
+    *   - `isJson` - A boolean indicating if the event is a JSON event.
+    *   - `metadataRaw` - The raw metadata of the event.
+    *   - `bodyRaw` - The raw body of the event.
+    *   - `data` - The data of the event.
+    *   - `body` - The body of the event.
+    *   - `linkMetadataRaw` - The raw metadata of the link event.
+    *   - `eventType` - The event type of the event.
+    *
+    * Queries can get more complex than what's explained here. For more information, see the
+    * [[https://developers.eventstore.com/server/v5/projections.html#user-defined-projections-api]].
     */
   def create(projectionName: String, query: String, settings: CreateProjectionSettings): F[Unit]
 
@@ -127,7 +238,7 @@ trait ProjectionManager[F[_]] {
     * @tparam T
     *   The type of the result.
     */
-  def getResult[T](projectionName: String, `type`: Class[T]): F[T]
+  def getResult[T <: Stateful[?]](projectionName: String, `type`: Class[T]): F[T]
 
   /** Gets the projection's result.
     * @param projectionName
@@ -139,7 +250,7 @@ trait ProjectionManager[F[_]] {
     * @tparam T
     *   The type of the result.
     */
-  def getResult[T](
+  def getResult[T <: Stateful[?]](
     projectionName: String,
     `type`: Class[T],
     settings: GetProjectionResultSettings
@@ -190,7 +301,7 @@ trait ProjectionManager[F[_]] {
     * @tparam T
     *   The type of the state.
     */
-  def getState[T](projectionName: String, `type`: Class[T]): F[T]
+  def getState[T <: Stateful[?]](projectionName: String, `type`: Class[T]): F[T]
 
   /** Gets the state of the projection.
     * @param projectionName
@@ -202,7 +313,7 @@ trait ProjectionManager[F[_]] {
     * @tparam T
     *   The type of the state.
     */
-  def getState[T](
+  def getState[T <: Stateful[?]](
     projectionName: String,
     `type`: Class[T],
     settings: GetProjectionStateSettings
@@ -295,20 +406,126 @@ trait ProjectionManager[F[_]] {
   def restartSubsystem(settings: RestartProjectionSubsystemSettings): F[Unit]
 
   /** Updates the projection's query and emit options.
+    *
     * @param projectionName
     *   The name of the projection to update.
     * @param query
     *   The query to use for the projection.
+    *
+    * ==Description==
+    *
+    * <br/>The query must be a valid JavaScript function. This function can have many forms, but the simplest way to
+    * reason about it is to think of it as a function that reads events from a stream (`fromStream`), reads from the
+    * given stream when a specific condition is met (`when`).
+    *
+    * <br/>Following that simple rule, understanding the query becomes much easier. All queries follow the following
+    * pattern:
+    *
+    * <br/>
+    * {{{
+    *   fromStream('stream-name')
+    *   .when({
+    *     $init: function() {
+    *      return { count: 0 };
+    *     },
+    *     $any: function(s, e) {
+    *       s.count += 1;
+    *     }
+    *     // ...
+    * }}}
+    *
+    * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
+    * valid stream name. The query then calls `when` which takes an object with different event handlers:
+    *
+    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *     the state of the projection.
+    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *     the projection.
+    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
+    *     is only used when the projection is partitioned.
+    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *     `foreachStream`.
+    *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
+    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *
+    * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
+    * handler. The event provided through the handler contains the following properties:
+    *
+    *   - `isJson` - A boolean indicating if the event is a JSON event.
+    *   - `metadataRaw` - The raw metadata of the event.
+    *   - `bodyRaw` - The raw body of the event.
+    *   - `data` - The data of the event.
+    *   - `body` - The body of the event.
+    *   - `linkMetadataRaw` - The raw metadata of the link event.
+    *   - `eventType` - The event type of the event.
+    *
+    * Queries can get more complex than what's explained here. For more information, see the
+    * [[https://developers.eventstore.com/server/v5/projections.html#user-defined-projections-api]].
     */
   def updateQuery(projectionName: String, query: String): F[Unit]
 
   /** Updates the projection's query and emit options.
+    *
     * @param projectionName
     *   The name of the projection to update.
     * @param query
     *   The query to use for the projection.
     * @param settings
     *   The settings to use for this operation.
+    *
+    * ==Description==
+    *
+    * <br/>The query must be a valid JavaScript function. This function can have many forms, but the simplest way to
+    * reason about it is to think of it as a function that reads events from a stream (`fromStream`), reads from the
+    * given stream when a specific condition is met (`when`).
+    *
+    * <br/>Following that simple rule, understanding the query becomes much easier. All queries follow the following
+    * pattern:
+    *
+    * <br/>
+    * {{{
+    *   fromStream('stream-name')
+    *   .when({
+    *     $init: function() {
+    *      return { count: 0 };
+    *     },
+    *     $any: function(s, e) {
+    *       s.count += 1;
+    *     }
+    *     // ...
+    * }}}
+    *
+    * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
+    * valid stream name. The query then calls `when` which takes an object with different event handlers:
+    *
+    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *     the state of the projection.
+    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *     the projection.
+    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
+    *     is only used when the projection is partitioned.
+    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *     `foreachStream`.
+    *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
+    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *
+    * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
+    * handler. The event provided through the handler contains the following properties:
+    *
+    *   - `isJson` - A boolean indicating if the event is a JSON event.
+    *   - `metadataRaw` - The raw metadata of the event.
+    *   - `bodyRaw` - The raw body of the event.
+    *   - `data` - The data of the event.
+    *   - `body` - The body of the event.
+    *   - `linkMetadataRaw` - The raw metadata of the link event.
+    *   - `eventType` - The event type of the event.
+    *
+    * Queries can get more complex than what's explained here. For more information, see the
+    * [[https://developers.eventstore.com/server/v5/projections.html#user-defined-projections-api]].
     */
   def updateQuery(projectionName: String, query: String, settings: UpdateProjectionSettings): F[Unit]
 

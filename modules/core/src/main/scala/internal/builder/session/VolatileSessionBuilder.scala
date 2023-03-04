@@ -15,7 +15,7 @@ import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.*
 import dolphin.setting.*
-import dolphin.{EventByte, MetadataBye, Trace, VolatileSession}
+import dolphin.{EventByte, MessageHandler, MetadataBye, Trace, VolatileSession}
 
 import cats.effect.Async
 import cats.effect.kernel.Resource
@@ -119,19 +119,19 @@ private[dolphin] object VolatileSessionBuilder {
           .futureLift(client.tombstoneStream(streamAggregateId, options.toOptions))
           .withTraceAndTransformer(Delete.make)
 
-        def tombstoneStream(streamAggregateId: String): F[Delete] =
-          // Workaround while https://github.com/EventStore/EventStoreDB-Client-Java/issues/201 is not released
-          self.tombstoneStream(streamAggregateId, DeleteStreamSettings.Default)
+        def tombstoneStream(streamAggregateId: String): F[Delete] = FutureLift[F]
+          .futureLift(client.tombstoneStream(streamAggregateId))
+          .withTraceAndTransformer(Delete.make)
 
         def subscribeToStream(
           streamAggregateId: String,
-          handler: VolatileMessage[F] => F[Unit]
+          handler: MessageHandler[F, VolatileMessage[F]]
         ): Resource[F, Unit] = self.subscribeToStream(streamAggregateId, SubscriptionToStreamSettings.Default, handler)
 
         def subscribeToStream(
           streamAggregateId: String,
           options: SubscriptionToStreamSettings,
-          handler: VolatileMessage[F] => F[Unit]
+          handler: MessageHandler[F, VolatileMessage[F]]
         ): Resource[F, Unit] =
           for {
             dispatcher   <- Dispatcher.sequential[F]

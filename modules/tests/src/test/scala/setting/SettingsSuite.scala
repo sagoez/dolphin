@@ -7,8 +7,7 @@ package dolphin.setting
 import dolphin.Config
 import dolphin.setting.{
   CreatePersistentSubscriptionToAllSettings as PS,
-  CreatePersistentSubscriptionToStreamSettings as PSS,
-  *
+  CreatePersistentSubscriptionToStreamSettings as PSS
 }
 
 import com.eventstore.dbclient.*
