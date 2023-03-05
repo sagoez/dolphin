@@ -75,7 +75,7 @@ object VolatileSessionSuite extends ResourceSuite {
         writeError <-
           session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data").attempt
       } yield writeError match {
-        case Left(exception) => expect(exception.getClass.getCanonicalName == "com.eventstore.dbclient.StreamDeletedException")
+        case Left(exception) => expect(exception.getClass.getCanonicalName == "io.grpc.StatusRuntimeException")
         case Right(_)        => failure("Should have thrown an exception")
       }
     }
