@@ -84,10 +84,10 @@ trait ProjectionManager[F[_]] {
     * {{{
     *   fromStream('stream-name')
     *   .when({
-    *     $init: function() {
+    *     \$init: function() {
     *      return { count: 0 };
     *     },
-    *     $any: function(s, e) {
+    *     \$any: function(s, e) {
     *       s.count += 1;
     *     }
     *     // ...
@@ -96,18 +96,18 @@ trait ProjectionManager[F[_]] {
     * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
     * valid stream name. The query then calls `when` which takes an object with different event handlers:
     *
-    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *   - `\$init` - This is the handler that is called when the projection is first created. It is used to initialize
     *     the state of the projection.
-    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *   - `\$any` - This is the handler that is called for every event in the stream. It is used to update the state of
     *     the projection.
-    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
-    *     is only used when the projection is partitioned.
-    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *   - `\$initShared` - Provide the initialization for a projection where the projection is possibly partitioned.
+    *     This is only used when the projection is partitioned.
+    *   - `\$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
     *     `foreachStream`.
     *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
-    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
-    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
-    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *     using fromAll() and 2 or more event type handlers are specified and the \$by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams(\$et-event-type-foo, \$et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from \$all).
     *
     * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
     * handler. The event provided through the handler contains the following properties:
@@ -147,10 +147,10 @@ trait ProjectionManager[F[_]] {
     * {{{
     *   fromStream('stream-name')
     *   .when({
-    *     $init: function() {
+    *     \$init: function() {
     *      return { count: 0 };
     *     },
-    *     $any: function(s, e) {
+    *     \$any: function(s, e) {
     *       s.count += 1;
     *     }
     *     // ...
@@ -159,18 +159,18 @@ trait ProjectionManager[F[_]] {
     * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
     * valid stream name. The query then calls `when` which takes an object with different event handlers:
     *
-    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *   - `\$init` - This is the handler that is called when the projection is first created. It is used to initialize
     *     the state of the projection.
-    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *   - `\$any` - This is the handler that is called for every event in the stream. It is used to update the state of
     *     the projection.
-    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
-    *     is only used when the projection is partitioned.
-    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *   - `\$initShared` - Provide the initialization for a projection where the projection is possibly partitioned.
+    *     This is only used when the projection is partitioned.
+    *   - `\$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
     *     `foreachStream`.
     *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
-    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
-    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
-    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *     using fromAll() and 2 or more event type handlers are specified and the \$by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams(\$et-event-type-foo, \$et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from \$all).
     *
     * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
     * handler. The event provided through the handler contains the following properties:
@@ -425,10 +425,10 @@ trait ProjectionManager[F[_]] {
     * {{{
     *   fromStream('stream-name')
     *   .when({
-    *     $init: function() {
+    *     \$init: function() {
     *      return { count: 0 };
     *     },
-    *     $any: function(s, e) {
+    *     \$any: function(s, e) {
     *       s.count += 1;
     *     }
     *     // ...
@@ -437,18 +437,18 @@ trait ProjectionManager[F[_]] {
     * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
     * valid stream name. The query then calls `when` which takes an object with different event handlers:
     *
-    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *   - `\$init` - This is the handler that is called when the projection is first created. It is used to initialize
     *     the state of the projection.
-    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *   - `\$any` - This is the handler that is called for every event in the stream. It is used to update the state of
     *     the projection.
-    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
-    *     is only used when the projection is partitioned.
-    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *   - `\$initShared` - Provide the initialization for a projection where the projection is possibly partitioned.
+    *     This is only used when the projection is partitioned.
+    *   - `\$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
     *     `foreachStream`.
     *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
-    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
-    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
-    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *     using fromAll() and 2 or more event type handlers are specified and the \$by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams(\$et-event-type-foo, \$et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from \$all).
     *
     * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
     * handler. The event provided through the handler contains the following properties:
@@ -488,10 +488,10 @@ trait ProjectionManager[F[_]] {
     * {{{
     *   fromStream('stream-name')
     *   .when({
-    *     $init: function() {
+    *     \$init: function() {
     *      return { count: 0 };
     *     },
-    *     $any: function(s, e) {
+    *     \$any: function(s, e) {
     *       s.count += 1;
     *     }
     *     // ...
@@ -500,18 +500,18 @@ trait ProjectionManager[F[_]] {
     * <br/>The query starts with a call to `fromStream` which specifies the stream to read events from. This can be any
     * valid stream name. The query then calls `when` which takes an object with different event handlers:
     *
-    *   - `$init` - This is the handler that is called when the projection is first created. It is used to initialize
+    *   - `\$init` - This is the handler that is called when the projection is first created. It is used to initialize
     *     the state of the projection.
-    *   - `$any` - This is the handler that is called for every event in the stream. It is used to update the state of
+    *   - `\$any` - This is the handler that is called for every event in the stream. It is used to update the state of
     *     the projection.
-    *   - `$initShared` - Provide the initialization for a projection where the projection is possibly partitioned. This
-    *     is only used when the projection is partitioned.
-    *   - `$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
+    *   - `\$initShared` - Provide the initialization for a projection where the projection is possibly partitioned.
+    *     This is only used when the projection is partitioned.
+    *   - `\$deleted` - This is the handler that is called when a stream is deleted. Can only be used with
     *     `foreachStream`.
     *   - `{event-type}` - This is the handler that is called when an event of the specified type is encountered. When
-    *     using fromAll() and 2 or more event type handlers are specified and the $by_event_type projection is enabled
-    *     and running, the projection starts as a fromStreams($et-event-type-foo, $et-event-type-bar) until the
-    *     projection has caught up and moves to reading from the transaction log (i.e. from $all).
+    *     using fromAll() and 2 or more event type handlers are specified and the \$by_event_type projection is enabled
+    *     and running, the projection starts as a fromStreams(\$et-event-type-foo, \$et-event-type-bar) until the
+    *     projection has caught up and moves to reading from the transaction log (i.e. from \$all).
     *
     * <br/>Each handler is provided with the current state of the projection as well as the event that triggered the
     * handler. The event provided through the handler contains the following properties:

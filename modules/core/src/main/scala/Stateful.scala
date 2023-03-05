@@ -28,12 +28,12 @@ package dolphin
   * {{{
   * fromStream('ShoppingCart').
   *    when({
-  *      "$init": function() {
+  *      "\$init": function() {
   *        return {
   *          state: 0
   *        }
   *      },
-  *      "$any": function(s, e) {
+  *      "\$any": function(s, e) {
   *        s.state = s.state + 1;
   *      }
   *  }).outputState();
