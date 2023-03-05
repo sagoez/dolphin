@@ -7,6 +7,7 @@ package dolphin
 import dolphin.internal.builder.client.{ProjectionManagerBuilder, ProjectionManagerClientBuilder}
 import dolphin.outcome.ProjectionDetails
 import dolphin.setting.*
+
 import cats.Parallel
 import cats.effect.Async
 import cats.effect.kernel.Resource

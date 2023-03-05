@@ -5,11 +5,13 @@
 package dolphin.internal.builder.client
 
 import scala.jdk.CollectionConverters.*
+
 import dolphin.internal.syntax.all.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.ProjectionDetails
 import dolphin.setting.*
 import dolphin.{ProjectionManager, Stateful, Trace}
+
 import cats.Parallel
 import cats.effect.Async
 import cats.effect.kernel.Resource
