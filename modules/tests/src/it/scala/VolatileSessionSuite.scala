@@ -60,7 +60,7 @@ object VolatileSessionSuite extends ResourceSuite {
         _         <- session.tombstoneStream(streamAggregateId)
         readError <- session.readStream(streamAggregateId, ReadFromStreamSettings.Default).attempt
       } yield readError match {
-        case Left(exception) => expect(exception.getClass.getCanonicalName == "com.eventstore.dbclient.StreamDeletedException")
+        case Left(exception) => expect(exception.getClass.getCanonicalName == "io.grpc.StatusRuntimeException")
         case Right(_)        => failure("Should have thrown an exception")
       }
     }
@@ -75,7 +75,7 @@ object VolatileSessionSuite extends ResourceSuite {
         writeError <-
           session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data").attempt
       } yield writeError match {
-        case Left(exception) => expect(exception.getClass.getCanonicalName == "io.grpc.StatusRuntimeException")
+        case Left(exception) => expect(exception.getClass.getCanonicalName == "com.eventstore.dbclient.StreamDeletedException")
         case Right(_)        => failure("Should have thrown an exception")
       }
     }
