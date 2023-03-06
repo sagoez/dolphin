@@ -224,6 +224,7 @@ provide a read model for the application. EventStoreDB provides a mechanism to c
 - [ ] Check how to test and improve performance if needed.
 - [ ] Revisit design decisions and refactor if needed.
 - [ ] Try to make queries more type safe and programmatic.
+
 ## Note
 
 - This project is not affiliated with EventStoreDB. For further information about EventStoreDB, please
