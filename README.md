@@ -7,17 +7,17 @@
 
 ## Table of Contents
 
-- [Dolphin](#dolphin)
-    - [Table of Contents](#table-of-contents)
-    - [Introduction](#introduction)
-    - [Disclaimer](#disclaimer)
-    - [Installation](#installation)
-    - [Usage](#usage)
-        - [Append to a stream](#append-to-a-stream)
-        - [Read from a stream](#read-from-a-stream)
-        - [Subscribe to a stream](#subscribe-to-a-stream)
-    - [Roadmap](#roadmap)
-    - [Note](#note)
+* [Table of Contents](#table-of-contents)
+* [Introduction](#introduction)
+* [Disclaimer](#disclaimer)
+* [Installation](#installation)
+* [Usage](#usage)
+  * [Append to a stream](#append-to-a-stream)
+  * [Read from a stream](#read-from-a-stream)
+  * [Subscribe to a stream](#subscribe-to-a-stream)
+  * [Projections](#projections)
+* [Roadmap](#roadmap)
+* [Note](#note)
 
 ## Introduction
 
@@ -195,35 +195,7 @@ object Main extends IOApp.Simple {
 }
 ```
 
-### Projections
-
-A projection is a mechanism to transform the events in a stream into a new stream. The new stream can be used to
-provide a read model for the application. EventStoreDB provides a mechanism to create a projection and manage it.
-
-
-```scala
-
-
-```
 ## Roadmap
-
-- [x] Add a docker-compose file to run EventStoreDB.
-- [x] Figure out what to do with some result data types like Position, ExpectedVersion.
-- [x] [Write a simple application that uses this wrapper](https://github.com/samgj18/event-sourcing-poc/)
-- [x] Keep the wrapper up to date with the latest version of the Java client.
-- [x] Revisit if we should log the errors or not simply let the user handle logging.
-- [x] Write tests for Client, Session, StoreSession and Trace.
-- [x] Write all the missing data types and methods in the wrapper.
-- [x] Resolve authentication handling.
-- [x] Write documentation on how to use the wrapper.
-- [x] Improve the way we handle the subscription listener.
-- [x] Provide Stream[F, Event[...]] instead of a Resource[F, ...] for the subscription.
-- [ ] Improve ProjectionManager and write tests for it.
-- [ ] Improve documentation, i.e. mini-website.
-- [ ] Keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
-- [ ] Check how to test and improve performance if needed.
-- [ ] Revisit design decisions and refactor if needed.
-- [ ] Try to make queries more type safe and programmatic.
 
 ## Note
 
@@ -234,3 +206,5 @@ provide a read model for the application. EventStoreDB provides a mechanism to c
 - There's a lot to change/improve, please feel free to open an issue if you have any questions or suggestions, or if you
   find any bugs.
 - For further information on usage and examples, please visit [Dolphin Integration Tests](modules/tests/src/it/scala/).
+
+
