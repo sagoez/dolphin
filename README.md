@@ -197,6 +197,8 @@ object Main extends IOApp.Simple {
 
 ## Roadmap
 
+Go to [Roadmap](./ROADMAP.md) for further information.
+
 ## Note
 
 - This project is not affiliated with EventStoreDB. For further information about EventStoreDB, please
