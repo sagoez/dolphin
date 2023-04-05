@@ -20,3 +20,4 @@ The following is a list of things that need to be done before we can consider th
 - [ ] Check how to test and improve performance if needed.
 - [ ] Revisit design decisions and refactor if needed.
 - [ ] Try to make queries more type safe and programmatic.
+- [ ] Add examples about ProjectionManager and how to use it.
