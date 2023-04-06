@@ -16,14 +16,21 @@ import cats.effect.kernel.Resource
 import fs2.Stream
 import sourcecode.{File, Line}
 
-/** The main entry point for the EventStoreDB client, operates with catchup subscriptions.
+/** The main entry point for the EventStoreDB client for <a
+  * href="https://developers.eventstore.com/server/v22.10/streams.html">catching up subscriptions</a>.
   *
-  * Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
+  * <br/> Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
   * EventStoreDB. Many threads can use the EventStoreDB client simultaneously, or a single thread can make many
   * asynchronous requests.
   *
-  * Subscriptions are created by calling subscribeToStream or subscribeToAll. The returned Subscription object is
-  * managed by the client.
+  * <br/> The client allows you to perform operations on streams, such as <a
+  * href="https://developers.eventstore.com/clients/grpc/reading-events.html#reading-from-a-stream">reading</a>, <a
+  * href="https://developers.eventstore.com/clients/grpc/appending-events.html#append-your-first-event">writing</a>,
+  * subscribing, and deleting.
+  *
+  * <br/> You can read more about catch up subscriptions in the server <a
+  * href="https://developers.eventstore.com/clients/grpc/subscriptions.html#subscribing-from-the-start">official
+  * documentation</a>.
   */
 trait VolatileSession[F[_]] extends Serializable { self =>
 
@@ -132,7 +139,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     */
   def subscribeToStream(
     streamAggregateId: String,
-    handler: VolatileMessage[F] => F[Unit]
+    handler: MessageHandler[F, VolatileMessage[F]]
   ): Resource[F, Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -151,7 +158,7 @@ trait VolatileSession[F[_]] extends Serializable { self =>
   def subscribeToStream(
     streamAggregateId: String,
     options: SubscriptionToStreamSettings,
-    handler: VolatileMessage[F] => F[Unit]
+    handler: MessageHandler[F, VolatileMessage[F]]
   ): Resource[F, Unit]
 
   /** Listener used to handle catch-up subscription notifications raised throughout its lifecycle.
@@ -238,6 +245,12 @@ trait VolatileSession[F[_]] extends Serializable { self =>
     *   A DeleteResult containing the result of the delete
     */
   def tombstoneStream(streamAggregateId: String): F[Delete]
+
+  /** If true, the connection is closed and all resources are released. */
+  def isShutdown: Boolean
+
+  /** Closes the connection and releases all resources. */
+  def shutdown: F[Unit]
 
 }
 

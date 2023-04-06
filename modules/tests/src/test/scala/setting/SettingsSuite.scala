@@ -7,8 +7,7 @@ package dolphin.setting
 import dolphin.Config
 import dolphin.setting.{
   CreatePersistentSubscriptionToAllSettings as PS,
-  CreatePersistentSubscriptionToStreamSettings as PSS,
-  *
+  CreatePersistentSubscriptionToStreamSettings as PSS
 }
 
 import com.eventstore.dbclient.*
@@ -42,8 +41,10 @@ object SettingsSuite extends FunSuite {
   }
 
   test("EventStoreSettings should return default settings") {
-    val options = Config.default
-    expect(!options.tls.tls) and expect(options.deadline == Some(10_000)) and expect(!options.tlsVerifyCert) and expect(
+    val options = Config.Default
+    expect(!options.tls.tls) and expect(options.deadline.contains(10_000)) and expect(
+      !options.tlsVerifyCert
+    ) and expect(
       !options.dnsDiscover
     )
   }
@@ -104,5 +105,75 @@ object SettingsSuite extends FunSuite {
   test("UpdatePersistentSubscriptionToStreamSettings should return java UpdatePersistentSubscriptionToStreamOptions") {
     val options = UpdatePersistentSubscriptionToStreamOptions.get().getClass
     expect(UpdatePersistentSubscriptionToStreamSettings.Default.toOptions.getClass == options)
+  }
+
+  test("AbortProjectionSettings should return java AbortProjectionOptions") {
+    val options = AbortProjectionOptions.get().getClass
+    expect(AbortProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("CreateProjectionSettings should return java CreateProjectionOptions") {
+    val options = CreateProjectionOptions.get().getClass
+    expect(CreateProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("DeleteProjectionSettings should return java DeleteProjectionOptions") {
+    val options = DeleteProjectionOptions.get().getClass
+    expect(DeleteProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("DisableProjectionSettings should return java DisableProjectionOptions") {
+    val options = DisableProjectionOptions.get().getClass
+    expect(DisableProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("EnableProjectionSettings should return java EnableProjectionOptions") {
+    val options = EnableProjectionOptions.get().getClass
+    expect(EnableProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("ResetProjectionSettings should return java ResetProjectionOptions") {
+    val options = ResetProjectionOptions.get().getClass
+    expect(ResetProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("UpdateProjectionSettings should return java UpdateProjectionOptions") {
+    val options = UpdateProjectionOptions.get().getClass
+    expect(UpdateProjectionSettings.Default.toOptions.getClass == options)
+  }
+
+  test("GetProjectionResultSettings should return java GetProjectionResultOptions") {
+    val options = GetProjectionResultOptions.get().getClass
+    expect(GetProjectionResultSettings.Default.toOptions.getClass == options)
+  }
+
+  test("GetProjectionStateSettings should return java GetProjectionStateOptions") {
+    val options = GetProjectionStateOptions.get().getClass
+    expect(GetProjectionStateSettings.Default.toOptions.getClass == options)
+  }
+
+  test("GetProjectionStatisticsSettings should return java GetProjectionStatisticsOptions") {
+    val options = GetProjectionStatisticsOptions.get().getClass
+    expect(GetProjectionStatisticsSettings.Default.toOptions.getClass == options)
+  }
+
+  test("GetProjectionStatusSettings should return java GetProjectionStatusOptions") {
+    val options = GetProjectionStatusOptions.get().getClass
+    expect(GetProjectionStatusSettings.Default.toOptions.getClass == options)
+  }
+
+  test("ListProjectionsSettings should return java ListProjectionsOptions") {
+    val options = ListProjectionsOptions.get().getClass
+    expect(ListProjectionsSettings.Default.toOptions.getClass == options)
+  }
+
+  test("RestartPersistentSubscriptionSettings should return java RestartPersistentSubscriptionOptions") {
+    val options = RestartPersistentSubscriptionSubsystemOptions.get().getClass
+    expect(RestartPersistentSubscriptionSubsystemSettings.Default.toOptions.getClass == options)
+  }
+
+  test("RestartProjectionSubsystemSettings should return java RestartProjectionSubsystemOptions") {
+    val options = RestartProjectionSubsystemOptions.get().getClass
+    expect(RestartProjectionSubsystemSettings.Default.toOptions.getClass == options)
   }
 }

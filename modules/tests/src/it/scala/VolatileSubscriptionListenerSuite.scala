@@ -1,12 +1,10 @@
-package dolphin.concurrent
+package dolphin
 
 import cats.effect.IO
-import cats.effect.kernel.Ref
-import cats.effect.kernel.Resource
+import cats.effect.kernel.{Ref, Resource}
 import cats.syntax.foldable.*
 import dolphin.Message.VolatileMessage
-import dolphin.{Config, Message, VolatileConsumer, VolatileSession}
-import dolphin.ResourceSuite
+import dolphin.suite.ResourceSuite
 
 import java.util.UUID
 import scala.concurrent.duration.*
@@ -15,7 +13,7 @@ object VolatileSubscriptionListenerSuite extends ResourceSuite {
 
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.default)
+  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
 
   test("onEvent with handler should be able to stop appends properly") { session =>
     val uuid = UUID.randomUUID().toString

@@ -6,7 +6,10 @@ package dolphin
 
 import dolphin.Event as DEvent
 
+import cats.{Applicative, Monad}
+
 sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable { self =>
+
   def consumer: T
 
   def get: Option[DEvent] =
@@ -18,42 +21,45 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
   def getOrThrow: DEvent =
     self match {
       case Message.Event(_, event, _) => event
-      case Message.Error(_, error)    => throw error
-      case Message.Cancelled(_)       => throw new IllegalStateException("Message cancelled")
-      case Message.Confirmation(_)    => throw new IllegalStateException("Message confirmed")
+      case _                          => throw new IllegalStateException("Message is not an event")
     }
 
   def isEvent: Boolean =
     self match {
-      case Message.Event(_, _, _) => true
+      case _: Message.Event[F, T] => true
       case _                      => false
     }
 
   def isError: Boolean =
     self match {
-      case Message.Error(_, _) => true
-      case _                   => false
+      case _: Message.Error[F, T] => true
+      case _                      => false
     }
 
   def isCancelled: Boolean =
     self match {
-      case Message.Cancelled(_) => true
-      case _                    => false
+      case _: Message.Cancelled[F, T] => true
+      case _                          => false
     }
 
   def isConfirmation: Boolean =
     self match {
-      case Message.Confirmation(_) => true
-      case _                       => false
+      case _: Message.Confirmation[F, T] => true
+      case _                             => false
     }
 
   def fold[A](onEvent: DEvent => A, onError: Throwable => A, onCancel: A, onConfirmation: A): A =
     self match {
-      case Message.Event(_, event, _) => onEvent(event)
-      case Message.Error(_, error)    => onError(error)
-      case Message.Cancelled(_)       => onCancel
-      case Message.Confirmation(_)    => onConfirmation
+      case Message.Event(_, event, _)    => onEvent(event)
+      case Message.Error(_, error)       => onError(error)
+      case _: Message.Cancelled[F, T]    => onCancel
+      case _: Message.Confirmation[F, T] => onConfirmation
     }
+
+  def flatTap(f: Message[F, T] => F[Unit])(implicit F: Monad[F]): F[Message[F, T]] =
+    F.flatMap(f(self))(_ => F.pure(self))
+
+  def map[A](f: Message[F, T] => A)(implicit F: Applicative[F]): F[A] = F.pure(f(self))
 
 }
 

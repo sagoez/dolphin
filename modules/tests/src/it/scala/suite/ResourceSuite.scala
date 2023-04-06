@@ -1,11 +1,12 @@
-package dolphin
+package dolphin.suite
 
 import cats.data.Validated
 import cats.effect.IO
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.noop.NoOpLogger
-import weaver.{Expectations, IOSuite, TestName}
 import weaver.scalacheck.{CheckConfig, Checkers}
+import weaver.{Expectations, IOSuite, TestName}
+
 import scala.concurrent.duration.*
 
 abstract class ResourceSuite extends IOSuite with Checkers {

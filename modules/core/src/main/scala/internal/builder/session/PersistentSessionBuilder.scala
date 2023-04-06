@@ -23,7 +23,6 @@ import cats.Parallel
 import cats.effect.Async
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
-import cats.syntax.apply.*
 import cats.syntax.functor.*
 import com.eventstore.dbclient.EventStoreDBPersistentSubscriptionsClient
 import fs2.Stream
@@ -40,8 +39,7 @@ private[dolphin] object PersistentSessionBuilder {
   ): Resource[F, PersistentSession[F]] =
     Resource.make {
       FutureLift[F].delay(new PersistentSession[F] { self =>
-        def shutdown: F[Unit] =
-          Trace[F].trace("Shutting down persistent client") *> FutureLift[F].delay(client.shutdown())
+        def shutdown: F[Unit] = FutureLift[F].delay(client.shutdown())
 
         def createToAll(
           subscriptionGroupName: String,
@@ -449,6 +447,8 @@ private[dolphin] object PersistentSessionBuilder {
                 )(subscription => FutureLift[F].delay(subscription.stop()))
                 .void
           } yield subscription
+
+        def isShutdown: Boolean = client.isShutdown
       })
     }(_.shutdown)
 

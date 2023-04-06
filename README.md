@@ -2,21 +2,22 @@
 
 [![Continuous Integration](https://github.com/lapsusHQ/dolphin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lapsusHQ/dolphin/actions/workflows/ci.yml)
 [![Clean](https://github.com/lapsusHQ/dolphin/actions/workflows/clean.yml/badge.svg)](https://github.com/lapsusHQ/dolphin/actions/workflows/clean.yml)
-![GitHub issues](https://img.shields.io/github/issues/lapsusHQ/dolphin)
+[![GitHub issues](https://img.shields.io/github/issues/lapsusHQ/dolphin)](https://github.com/lapsusHQ/dolphin/issues)
+[![Version](https://img.shields.io/badge/version-0.0--`Latest%20Commit%20Hash`--SNAPSHOT-blue)](https://github.com/lapsusHQ/dolphin)
 
 ## Table of Contents
 
-- [Dolphin](#dolphin)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [⚠️ Disclaimer](#️-disclaimer)
-  - [Installation](#installation)
-  - [Usage](#usage)
-    - [Quick Start](#quick-start)
-      - [Subscribing to a stream with fs2](#subscribing-to-a-stream-with-fs2)
-      - [Subscribing to a stream with message handler](#subscribing-to-a-stream-with-message-handler)
-  - [Roadmap](#roadmap)
-  - [Note](#note)
+* [Table of Contents](#table-of-contents)
+* [Introduction](#introduction)
+* [Disclaimer](#disclaimer)
+* [Installation](#installation)
+* [Usage](#usage)
+  * [Append to a stream](#append-to-a-stream)
+  * [Read from a stream](#read-from-a-stream)
+  * [Subscribe to a stream](#subscribe-to-a-stream)
+  * [Projections](#projections)
+* [Roadmap](#roadmap)
+* [Note](#note)
 
 ## Introduction
 
@@ -24,9 +25,9 @@ EventStoreDB is an open-source state-transition database, designed for businesse
 power of event-driven architecture. It is a purpose-built database for event-driven applications, with a focus on high
 performance, scalability, and reliability.
 
-## ⚠️ Disclaimer
+## Disclaimer
 
-Dolphin is a Scala wrapper for the Java client of EventStoreDB. It is a work in progress and is not ready nor
+⚠️ Dolphin is a Scala wrapper for the Java client of EventStoreDB. It is a work in progress and is not ready nor
 recommended for production use.
 
 ## Installation
@@ -40,19 +41,19 @@ libraryDependencies ++= Seq("io.github.lapsushq" %% "dolphin-core" % "0.0-`Lates
 ## Usage
 
 EventStoreDB distinguishes between a normal session and a persistent session. A normal session is a volatile session,
-which means that the reads operate on the disk without the possibility of acknowledging. A persistent session, in turn,
-is a session that reads from the disk and provides a mechanism to acknowledge the read. This means that the persistent
-session is slower than the normal session, but it is more reliable.
+which means that reads operate on the disk without the possibility of acknowledging. A persistent session, in turn,
+is a session that reads from the disk and provides a mechanism to acknowledge the read, in turn, you can not write with
+this type of subscription. This means that a persistent
+session could perform slower than the normal session.
 
-### Quick Start
+### Append to a stream
 
 ```scala
+import dolphin.*
 import cats.effect.{IO, IOApp}
-import dolphin.VolatileSession
-import dolphin.setting.{EventStoreSettings, ReadFromStreamSettings}
-import fs2.Stream
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import fs2.Stream
 
 object Main extends IOApp.Simple {
 
@@ -60,13 +61,44 @@ object Main extends IOApp.Simple {
 
   override def run: IO[Unit] =
     (for {
-      session <- VolatileSession.stream[IO](EventStoreSettings.Default)
+      session <- VolatileSession.stream[IO](Config.Default)
       _ <- Stream.eval(
-        session.appendToStream("test-stream", """{"hello": "world"}""".getBytes, Array.emptyByteArray, "test")
+        session.appendToStream(
+          "ShoppingCart",
+          """{"id": "9b188885-04a8-4ae0-b8a4-74a82c17d2ec", "value": 1}""".getBytes,
+          Array.emptyByteArray,
+          "Counter"
+        )
       )
-      read <- Stream.eval(session.readStream("test-stream", ReadFromStreamSettings.Default))
+    } yield ())
+      .compile
+      .drain
+}
+```
+
+### Read from a stream
+
+```scala
+import dolphin.*
+import dolphin.setting.ReadFromStreamSettings
+
+import cats.effect.{IO, IOApp}
+
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import fs2.Stream
+
+
+object Main extends IOApp.Simple {
+
+  implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+  override def run: IO[Unit] =
+    (for {
+      session <- VolatileSession.stream[IO](Config.Default)
+      read <- Stream.eval(session.readStream("ShoppingCart", ReadFromStreamSettings.Default))
       data <- read.getEventData
-      _ <- Stream.eval(IO.println(new String(data))) // {"hello": "world"}
+      _ <- Stream.eval(IO.println(new String(data))) // {"id": "9b188885-04a8-4ae0-b8a4-74a82c17d2ec", "value": 1}
     } yield ())
       .compile
       .drain
@@ -77,7 +109,13 @@ EventStoreDB provides a mechanism to subscribe to a stream. This means that the 
 receive all the events that are appended to the stream. The client can also acknowledge the events that are received (if
 created with a persistent session).
 
-#### Subscribing to a stream with fs2
+### Subscribe to a stream
+
+There are two ways to subscribe to a stream. The first way is to use the `subscribeToStream` method on the session. This
+will return a `Stream` of `Message` objects. The second way is to use the `subscribeToStream` method on the session and
+provide a `MessageHandler`. This will return a `Resource` of `Unit`.
+
+- With `subscribeToStream` of `Stream`:
 
 ```scala
 import dolphin.*
@@ -93,23 +131,23 @@ object Main extends IOApp.Simple {
 
   implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-  def program: Stream[IO, Unit] =
+  private def program: Stream[IO, Unit] =
     for {
-      session <- VolatileSession.stream[IO](Config.default)
+      session <- VolatileSession.stream[IO](Config.Default)
       _ <- Stream
         .iterateEval(UUID.randomUUID())(_ => IO(UUID.randomUUID()))
         .evalMap { uuid =>
           session
             .appendToStream(
-              "cocomono",
-              s"""{"test": "${uuid}"}""".getBytes,
+              "ShoppingCart",
+              s"""{"id": "${uuid}", "value": 1}""".getBytes,
               Array.emptyByteArray,
-              "test"
+              "Counter"
             )
         }
         .metered(10.seconds)
         .concurrently {
-          session.subscribeToStream("cocomono").evalMap {
+          session.subscribeToStream("ShoppingCart").evalMap {
             case Message.Event(_, event, _) => logger.info(new String(event.getEventData))
             case Message.Error(_, error) => logger.error(s"Received error: ${error}")
             case Message.Cancelled(_) => logger.info("Received cancellation")
@@ -123,7 +161,7 @@ object Main extends IOApp.Simple {
 }
 ```
 
-#### Subscribing to a stream with message handler
+- With `subscribeToStream` of `MessageHandler` (i.e. `Message[F, VolatileConsumer[F]] => F[Unit]`):
 
 ```scala
 import dolphin.*
@@ -149,31 +187,85 @@ object Main extends IOApp.Simple {
 
   override def run: IO[Unit] =
     (for {
-      session <- VolatileSession.resource[IO](Config.default)
-      _ <- session.subscribeToStream("serial", handlers)
+      session <- VolatileSession.resource[IO](Config.Default)
+      _ <- session.subscribeToStream("ShoppingCart", handlers)
 
     } yield ()).useForever
 
 }
 ```
 
+### Projections
+
+Projections are a way to transform the data in a stream. EventStoreDB provides a mechanism to create and manage projections.
+
+```scala
+import dolphin.*
+
+import cats.effect.{IO, IOApp, Resource}
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.fasterxml.jackson.annotation.JsonProperty
+
+object Main extends IOApp.Simple {
+
+  implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+  private val GET_TOTAL_ON_A_SHOPPING_BASKET = """fromStream('Something').
+      when({
+        "$init": function() {
+          return {
+            state: {
+              id: "",
+              value: 0
+            }
+          }
+        },
+
+        Counter: function(s, e) {
+          if (e.data.id)
+              s.state.id = e.data.id;
+          if (e.data.value)
+              s.state.value = s.state.value + e.data.value;
+        }
+    }).outputState();"""
+
+  // JsonProperty is super important as it is how EventStore will deserialize internally
+  final case class ShoppingBasket(@JsonProperty("id") id: String, @JsonProperty("value") value: Int)
+
+  // You need to provide an empty instance of the state
+  object ShoppingBasket {
+    val Empty = ShoppingBasket("", 0)
+  }
+
+    /* EventStoreDB will use `getState` and `setState` to manipulate the state. There is no need to implement them
+    * yourself. But if you need to do so, you can do it by implementing the `Stateful` trait and overriding the `getState`
+    * method. To override the `setState` method, you need to implement the `WithSetter` trait and override the `setState`.
+    * 
+    * You can distinguish between two `states`:
+    *
+    * - `ServerState` is the state that EventStoreDB will provide to you, in this case, the one given by the projection.
+    * - `ClientState` is the state that you will receive which can be manipulated by you by overriding the `setState` method.
+    */
+  final case class Counter() extends Stateful[ShoppingBasket] {
+    def init = ShoppingBasket.Empty
+  }
+
+  def program: Resource[IO, Unit] =
+    for {
+      session <- ProjectionManager.resource[IO](Config.Default)
+      _       <- Resource.eval(session.create("Cart", GET_TOTAL_ON_A_SHOPPING_BASKET)).attempt
+      state   <- Resource.eval(session.getState("Cart", classOf[Counter]))
+      _       <- Resource.eval(logger.info(state.getState.toString()))
+    } yield ()
+
+  override def run: IO[Unit] = program.use(_ => IO.never)
+
+}
+```
 ## Roadmap
 
-- [x] Add a docker-compose file to run EventStoreDB.
-- [x] Figure out what to do with some result data types like Position, ExpectedVersion.
-- [x] [Write a simple application that uses this wrapper](https://github.com/samgj18/event-sourcing-poc/)
-- [x] Keep the wrapper up to date with the latest version of the Java client.
-- [x] Revisit if we should log the errors or not simply let the user handle logging.
-- [x] Write tests for Client, Session, StoreSession and Trace.
-- [x] Write all the missing data types and methods in the wrapper.
-- [x] Resolve authentication handling.
-- [ ] Write documentation on how to use the wrapper.
-- [ ] Revisit design decisions and refactor if needed.
-- [ ] Keeping the session open for the whole application lifetime is not ideal since it seems to starve the cpu.
-- [ ] Improve the way we handle the subscription listener.
-- [ ] Provide Stream[F, Event[...]] instead of a Resource[F, ...] for the subscription.
-- [ ] Improve documentation.
-- [ ] Check how to test and improve performance.
+Go to [Roadmap](./ROADMAP.md) for further information.
 
 ## Note
 

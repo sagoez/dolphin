@@ -16,13 +16,15 @@ import cats.effect.kernel.Resource
 import fs2.Stream
 import sourcecode.{File, Line}
 
-/** The main entry point for the EventStoreDB client.
+/** The main entry point for the EventStoreDB client for <a
+  * href="https://developers.eventstore.com/server/v22.10/persistent-subscriptions.html#persistent-subscription">persistent
+  * subscriptions</a>.
   *
-  * Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
+  * <br/> Represents EventStoreDB client for stream operations. A client instance maintains a two-way communication to
   * EventStoreDB. Many threads can use the EventStoreDB client simultaneously, or a single thread can make many
   * asynchronous requests.
   *
-  * Persistent subscriptions are similar to catch-up subscriptions, but there are two key differences:
+  * <br/> Persistent subscriptions are similar to catch-up subscriptions, but there are two key differences:
   *
   *   - The subscription checkpoint is maintained by the server. It means that when your client reconnects to the
   *     persistent subscription, it will automatically resume from the last known position.
@@ -30,11 +32,11 @@ import sourcecode.{File, Line}
   *   - It's possible to connect more than one event consumer to the same persistent subscription. In that case, the
   *     server will load-balance the consumers, depending on the defined strategy, and distribute the events to them.
   *
-  * Because of those, persistent subscriptions are defined as subscription groups that are defined and maintained by the
-  * server. Consumer then connect to a particular subscription group, and the server starts sending event to the
+  * <br/> Because of those, persistent subscriptions are defined as subscription groups that are defined and maintained
+  * by the server. Consumer then connect to a particular subscription group, and the server starts sending event to the
   * consumer.
   *
-  * You can read more about persistent subscriptions in the server <a
+  * <br/> You can read more about persistent subscriptions in the server <a
   * href="https://developers.eventstore.com/clients/grpc/persistent-subscriptions.html#creating-a-subscription-group">documentation</a>.
   */
 trait PersistentSession[F[_]] extends Serializable { self =>
@@ -297,6 +299,12 @@ trait PersistentSession[F[_]] extends Serializable { self =>
     options: PersistentSubscriptionSettings,
     handler: PersistentMessage[F] => F[Unit]
   ): Resource[F, Unit]
+
+  /** If true, the connection is closed and all resources are released. */
+  def isShutdown: Boolean
+
+  /** Closes the connection and releases all resources. */
+  def shutdown: F[Unit]
 }
 
 object PersistentSession {

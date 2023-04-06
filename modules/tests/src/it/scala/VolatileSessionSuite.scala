@@ -1,16 +1,16 @@
 package dolphin
 
-import dolphin.{Config, VolatileSession}
 import dolphin.concurrent.ExpectedRevision
 import dolphin.setting.ReadFromStreamSettings
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import fs2.Stream
+import dolphin.suite.{ResourceSuite, generator}
 
 object VolatileSessionSuite extends ResourceSuite {
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.default)
+  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
 
   test("Should be able to create a session and write a dummy event to event store database") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>
@@ -75,7 +75,8 @@ object VolatileSessionSuite extends ResourceSuite {
         writeError <-
           session.appendToStream(streamAggregateId, s"test-event-".getBytes, Array.emptyByteArray, "test-data").attempt
       } yield writeError match {
-        case Left(exception) => expect(exception.getClass.getCanonicalName == "io.grpc.StatusRuntimeException")
+        case Left(exception) =>
+          expect(exception.getClass.getCanonicalName == "com.eventstore.dbclient.StreamDeletedException")
         case Right(_)        => failure("Should have thrown an exception")
       }
     }

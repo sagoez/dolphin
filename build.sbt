@@ -37,7 +37,8 @@ lazy val commonSettings = Seq(
     "-Wconf:cat=unused:error",
     "-deprecation"
   ),
-  scalafmtOnCompile := false
+  scalafmtOnCompile := false,
+  autoAPIMappings   := true
 )
 
 ThisBuild / githubWorkflowBuildPreamble ++=
@@ -64,23 +65,10 @@ ThisBuild / githubWorkflowBuildPostamble ++= List(
 
 lazy val dolphin = tlCrossRootProject
   .settings(commonSettings)
-  .aggregate(core, circe, tests)
+  .aggregate(core, tests)
   .settings(
     name := "dolphin"
   )
-
-lazy val circe = project
-  .in(file("modules/circe"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings)
-  .settings(
-    name := "dolphin-circe",
-    libraryDependencies ++= Seq(
-      Libraries.circeCore,
-      Libraries.circeParser
-    )
-  )
-  .dependsOn(core)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -106,7 +94,7 @@ lazy val tests = project
   .in(file("modules/tests"))
   .configs(IntegrationTest)
   .settings(commonSettings)
-  .dependsOn(core, circe)
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(
     scalacOptions -= "-Xfatal-warnings",

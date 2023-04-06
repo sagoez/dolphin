@@ -15,7 +15,7 @@ import dolphin.internal.syntax.result.*
 import dolphin.internal.util.FutureLift
 import dolphin.outcome.*
 import dolphin.setting.*
-import dolphin.{EventByte, MetadataBye, Trace, VolatileSession}
+import dolphin.{EventByte, MessageHandler, MetadataBye, Trace, VolatileSession}
 
 import cats.effect.Async
 import cats.effect.kernel.Resource
@@ -24,7 +24,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.parallel.*
 import cats.{Applicative, FlatMap, Monad, Parallel}
-import com.eventstore.dbclient.{EventData => JEventData, EventStoreDBClient}
+import com.eventstore.dbclient.{EventData as JEventData, EventStoreDBClient}
 import fs2.Stream
 import sourcecode.{File, Line}
 
@@ -70,7 +70,7 @@ private[dolphin] object VolatileSessionBuilder {
 
         def deleteStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete] = FutureLift[F]
           .futureLift(client.deleteStream(streamAggregateId, options.toOptions))
-          .withTraceAndTransformer(Delete.make(_))
+          .withTraceAndTransformer(Delete.make)
 
         def appendToStream(
           stream: String,
@@ -88,7 +88,7 @@ private[dolphin] object VolatileSessionBuilder {
         ): F[Write] = eventData(event, metadata, `type`).flatMap { events =>
           FutureLift[F]
             .futureLift(client.appendToStream(stream, options.toOptions, events))
-            .withTraceAndTransformer(Write.make(_))
+            .withTraceAndTransformer(Write.make)
         }
 
         def appendToStream(
@@ -99,7 +99,7 @@ private[dolphin] object VolatileSessionBuilder {
         ): F[Write] = eventData(events, `type`).flatMap { events =>
           FutureLift[F]
             .futureLift(client.appendToStream(stream, options.toOptions, events))
-            .withTraceAndTransformer(Write.make(_))
+            .withTraceAndTransformer(Write.make)
         }
 
         def appendToStream(
@@ -113,25 +113,25 @@ private[dolphin] object VolatileSessionBuilder {
           options: ReadFromStreamSettings
         ): F[Read[F]] = FutureLift[F]
           .futureLift(client.readStream(stream, options.toOptions))
-          .withTraceAndTransformer(Read.make(_))
+          .withTraceAndTransformer(Read.make)
 
         def tombstoneStream(streamAggregateId: String, options: DeleteStreamSettings): F[Delete] = FutureLift[F]
           .futureLift(client.tombstoneStream(streamAggregateId, options.toOptions))
-          .withTraceAndTransformer(Delete.make(_))
+          .withTraceAndTransformer(Delete.make)
 
-        def tombstoneStream(streamAggregateId: String): F[Delete] =
-          // Workaround while https://github.com/EventStore/EventStoreDB-Client-Java/issues/201 is not fixed
-          self.tombstoneStream(streamAggregateId, DeleteStreamSettings.Default)
+        def tombstoneStream(streamAggregateId: String): F[Delete] = FutureLift[F]
+          .futureLift(client.tombstoneStream(streamAggregateId))
+          .withTraceAndTransformer(Delete.make)
 
         def subscribeToStream(
           streamAggregateId: String,
-          handler: VolatileMessage[F] => F[Unit]
+          handler: MessageHandler[F, VolatileMessage[F]]
         ): Resource[F, Unit] = self.subscribeToStream(streamAggregateId, SubscriptionToStreamSettings.Default, handler)
 
         def subscribeToStream(
           streamAggregateId: String,
           options: SubscriptionToStreamSettings,
-          handler: VolatileMessage[F] => F[Unit]
+          handler: MessageHandler[F, VolatileMessage[F]]
         ): Resource[F, Unit] =
           for {
             dispatcher   <- Dispatcher.sequential[F]
@@ -175,6 +175,9 @@ private[dolphin] object VolatileSessionBuilder {
                           )
                           .flatMap(_ => listener.stream)
           } yield stream
+
+        /** If true, the connection is closed and all resources are released. */
+        override def isShutdown: Boolean = client.isShutdown
       })
     }(_.shutdown)
 

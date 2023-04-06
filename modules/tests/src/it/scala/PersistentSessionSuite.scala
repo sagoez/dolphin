@@ -1,10 +1,10 @@
 package dolphin
 
-import dolphin.{Config, PersistentSession}
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import dolphin.setting.UpdatePersistentSubscriptionToAllSettings
 import io.grpc.StatusRuntimeException
+import dolphin.suite.ResourceSuite
 
 import java.util.UUID
 
@@ -12,7 +12,7 @@ object PersistentSessionSuite extends ResourceSuite {
 
   override type Res = PersistentSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.default)
+  override def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.Default)
 
   test("should be able to create a persistent subscription to the all stream") { session =>
     val uuid = UUID.randomUUID().toString

@@ -5,7 +5,7 @@
 package dolphin.internal.builder.listener
 
 import dolphin.Message.VolatileMessage
-import dolphin.{Event, Message, VolatileConsumer}
+import dolphin.{Event, Message, MessageHandler, VolatileConsumer}
 
 import cats.Applicative
 import cats.effect.std.{Dispatcher, Queue}
@@ -28,7 +28,7 @@ private[dolphin] sealed trait VolatileSubscriptionListenerBuilder[F[_]] extends 
 private[dolphin] object VolatileSubscriptionListenerBuilder {
 
   final case class WithFutureHandlerBuilder[F[_]: Async](
-    handler: VolatileMessage[F] => F[Unit],
+    handler: MessageHandler[F, VolatileMessage[F]],
     dispatcher: Dispatcher[F]
   ) extends VolatileSubscriptionListenerBuilder[F] {
 
