@@ -21,3 +21,5 @@ The following is a list of things that need to be done before we can consider th
 - [ ] Revisit design decisions and refactor if needed.
 - [ ] Try to make queries more type safe and programmatic.
 - [ ] Add examples about ProjectionManager and how to use it.
+- [ ] Add a generic, comprenhensive and extensible way of programmatically create projection functions that do not allow mistakes or javascript injection.
+- [ ] Automatically generate @Jackson annotations for the data types in the ProjectionManager.

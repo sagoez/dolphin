@@ -195,6 +195,69 @@ object Main extends IOApp.Simple {
 }
 ```
 
+### Projections
+
+Projections are a way to transform the data in a stream. EventStoreDB provides a mechanism to create and manage projections.
+
+```scala
+import dolphin.*
+
+import cats.effect.{IO, IOApp, Resource}
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.fasterxml.jackson.annotation.JsonProperty
+
+object Main extends IOApp.Simple {
+
+  implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+
+  private val GET_TOTAL_ON_A_SHOPPING_BASKET = """fromStream('Something').
+      when({
+        "$init": function() {
+          return {
+            state: {
+              id: "",
+              value: 0
+            }
+          }
+        },
+
+        Counter: function(s, e) {
+          if (e.data.id)
+              s.state.id = e.data.id;
+          if (e.data.value)
+              s.state.value = s.state.value + e.data.value;
+        }
+    }).outputState();"""
+
+  // JsonProperty is super important as it is how EventStore will deserialize internally
+  final case class ShoppingBasket(@JsonProperty("id") id: String, @JsonProperty("value") value: Int)
+
+  // You need to provide an empty instance of the state
+  object ShoppingBasket {
+    val Empty = ShoppingBasket("", 0)
+  }
+
+  /* EventStoreDB will use `getState` and `setState` to manipulate the state. There is no need to implement them
+  * yourself. But if you need to do so, you can do it by implementing the `Stateful` trait and overriding the `getState`
+  * method. To override the `setState` method, you need to implement the `WithSetter` trait and override the `setState`.
+  */
+  final case class Counter() extends Stateful[ShoppingBasket] {
+    def init = ShoppingBasket.Empty
+  }
+
+  def program: Resource[IO, Unit] =
+    for {
+      session <- ProjectionManager.resource[IO](Config.Default)
+      _       <- Resource.eval(session.create("Cart", GET_TOTAL_ON_A_SHOPPING_BASKET)).attempt
+      state   <- Resource.eval(session.getState("Cart", classOf[Counter]))
+      _       <- Resource.eval(logger.info(state.getState.toString()))
+    } yield ()
+
+  override def run: IO[Unit] = program.use(_ => IO.never)
+
+}
+```
 ## Roadmap
 
 Go to [Roadmap](./ROADMAP.md) for further information.
@@ -208,5 +271,3 @@ Go to [Roadmap](./ROADMAP.md) for further information.
 - There's a lot to change/improve, please feel free to open an issue if you have any questions or suggestions, or if you
   find any bugs.
 - For further information on usage and examples, please visit [Dolphin Integration Tests](modules/tests/src/it/scala/).
-
-
