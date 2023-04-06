@@ -43,8 +43,12 @@ package dolphin
 
 trait Stateful[S] {
 
-  /** Represents the state of the projection. Should be initialized to an empty value of the type `S`. */
-  private[dolphin] var state: S = init
+  /** Represents the state of the projection. Should be initialized to an empty value of the type `S`. 
+   *  
+   *  The only reason this is not a `val` is to allow the user to override the `setState` in case they want to do some
+   *  validation or extra logic before setting the state.
+   *  */
+  var state: S = init
 
   /** Initializes the state of the projection. */
   protected def init: S
@@ -54,6 +58,7 @@ trait Stateful[S] {
 }
 
 trait WithSetter[S] extends Stateful[S] {
+
   /** Sets the state of the projection. */
-  protected def setState(state: S): Unit 
+  protected def setState(state: S): Unit
 }

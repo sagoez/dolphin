@@ -238,10 +238,15 @@ object Main extends IOApp.Simple {
     val Empty = ShoppingBasket("", 0)
   }
 
-  /* EventStoreDB will use `getState` and `setState` to manipulate the state. There is no need to implement them
-  * yourself. But if you need to do so, you can do it by implementing the `Stateful` trait and overriding the `getState`
-  * method. To override the `setState` method, you need to implement the `WithSetter` trait and override the `setState`.
-  */
+    /* EventStoreDB will use `getState` and `setState` to manipulate the state. There is no need to implement them
+    * yourself. But if you need to do so, you can do it by implementing the `Stateful` trait and overriding the `getState`
+    * method. To override the `setState` method, you need to implement the `WithSetter` trait and override the `setState`.
+    * 
+    * You can distinguish between two `states`:
+    *
+    * - `ServerState` is the state that EventStoreDB will provide to you, in this case, the one given by the projection.
+    * - `ClientState` is the state that you will receive which can be manipulated by you by overriding the `setState` method.
+    */
   final case class Counter() extends Stateful[ShoppingBasket] {
     def init = ShoppingBasket.Empty
   }
