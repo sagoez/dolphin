@@ -36,7 +36,7 @@ object ExpectedRevision {
         case -2L        => ExpectedRevision.Any
         case -4L        => ExpectedRevision.StreamExists
         // Gracefully handle the case where the value is not greater than -1
-        case v if v > 1 => ExpectedRevision.Exact(rev.toRawLong())
+        case v if v > -1 => ExpectedRevision.Exact(rev.toRawLong())
         case _          => ExpectedRevision.NoStream
       }
   }
