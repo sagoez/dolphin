@@ -99,7 +99,6 @@ lazy val tests = project
   .settings(
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      Libraries.catsLaws,
       Libraries.log4catsNoOp,
       Libraries.weaverCats,
       Libraries.weaverDiscipline,

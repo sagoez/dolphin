@@ -4,9 +4,8 @@
 
 package dolphin.concurrent
 
-import java.lang.reflect.Field
-
 import com.eventstore.dbclient
+
 sealed trait ExpectedRevision
 
 object ExpectedRevision {
@@ -30,30 +29,13 @@ object ExpectedRevision {
 
   final implicit class DbClientExpectedRevisionOps(val rev: dbclient.ExpectedRevision) extends AnyVal {
 
-    // Bit of unsafe code here, but it's the only way (I know) to get the value of the private field
+    // See https://github.com/EventStore/EventStoreDB-Client-Java/blob/trunk/db-client-java/src/main/java/com/eventstore/dbclient/ExpectedRevision.java
     private[dolphin] def toScala: ExpectedRevision =
-      if (rev != dbclient.ExpectedRevision.any()) {
-        if (rev == dbclient.ExpectedRevision.noStream()) {
-          ExpectedRevision.NoStream
-        } else if (rev == dbclient.ExpectedRevision.streamExists()) {
-          ExpectedRevision.StreamExists
-        } else {
-          // If we can't get the value, we should throw as it is unsafe to continue writing with the wrong expected revision value
-          val fields: Array[Field] = rev.getClass.getDeclaredFields.collect {
-            case field if field.getName == "version" && field.getType == classOf[Long] =>
-              field.setAccessible(true)
-              field
-          }
-
-          val value = fields
-            .map(_.getLong(rev))
-            .headOption
-            .getOrElse(throw new RuntimeException("Could not get the value of the expected revision"))
-
-          ExpectedRevision.Exact(value)
-        }
-      } else {
-        ExpectedRevision.Any
+      rev.toRawLong() match {
+        case -1L => ExpectedRevision.NoStream
+        case -2L => ExpectedRevision.Any
+        case -4L => ExpectedRevision.StreamExists
+        case _   => ExpectedRevision.Exact(rev.toRawLong())
       }
   }
 }

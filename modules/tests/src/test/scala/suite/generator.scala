@@ -7,6 +7,6 @@ package dolphin.suite
 import org.scalacheck.Gen
 
 object generator {
-  def numericGen: Gen[Long] = Gen.chooseNum(Long.MinValue, Long.MaxValue)
+  def posNumericGen: Gen[Long] = Gen.chooseNum(0L, Long.MaxValue)
 
 }
