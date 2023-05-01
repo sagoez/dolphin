@@ -32,12 +32,12 @@ object ExpectedRevision {
     // See https://github.com/EventStore/EventStoreDB-Client-Java/blob/trunk/db-client-java/src/main/java/com/eventstore/dbclient/ExpectedRevision.java
     private[dolphin] def toScala: ExpectedRevision =
       rev.toRawLong() match {
-        case -1L        => ExpectedRevision.NoStream
-        case -2L        => ExpectedRevision.Any
-        case -4L        => ExpectedRevision.StreamExists
+        case -1L         => ExpectedRevision.NoStream
+        case -2L         => ExpectedRevision.Any
+        case -4L         => ExpectedRevision.StreamExists
         // Gracefully handle the case where the value is not greater than -1
         case v if v > -1 => ExpectedRevision.Exact(rev.toRawLong())
-        case _          => ExpectedRevision.NoStream
+        case _           => ExpectedRevision.NoStream
       }
   }
 }
