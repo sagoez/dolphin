@@ -6,11 +6,14 @@ import cats.effect.IO
 import cats.effect.kernel.Resource
 import fs2.Stream
 import dolphin.suite.{ResourceSuite, generator}
+import weaver.scalacheck.Checkers
+import weaver.{GlobalRead, IOSuite}
 
-object VolatileSessionSuite extends ResourceSuite {
+class VolatileSessionSuite(global: GlobalRead) extends IOSuite with ResourceSuite with Checkers {
+
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
+  override def sharedResource: Resource[IO, Res] = global.getOrFailR[Res]()
 
   test("Should be able to create a session and write a dummy event to event store database") { session =>
     forall(generator.nonEmptyStringGen) { streamAggregateId =>

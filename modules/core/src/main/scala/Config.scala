@@ -11,8 +11,6 @@ import dolphin.Config.Base.*
 import dolphin.Config.*
 import dolphin.concurrent.NodePreference
 
-
-
 sealed abstract class Config {
   val host: EventStoreHost
   val port: EventStorePort

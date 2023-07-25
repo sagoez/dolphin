@@ -5,16 +5,18 @@ import cats.effect.{IO, Resource}
 import dolphin.Message.PersistentMessage
 import dolphin.setting.PersistentSubscriptionSettings
 import fs2.Stream
+import weaver.{GlobalRead, IOSuite}
+import weaver.scalacheck.Checkers
 import dolphin.suite.ResourceSuite
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-object PersistentSubscriptionListenerSuite extends ResourceSuite {
-
-  def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.Default)
+class PersistentSubscriptionListenerSuite(global: GlobalRead) extends IOSuite with ResourceSuite with Checkers {
 
   override type Res = PersistentSession[IO]
+
+  override def sharedResource: Resource[IO, Res] = global.getOrFailR[Res]()
 
   test("should be able to stop subscription with resource type subscription") { session =>
     val uuid = UUID.randomUUID().toString
