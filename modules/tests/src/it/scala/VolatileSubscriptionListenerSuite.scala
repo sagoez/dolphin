@@ -6,14 +6,17 @@ import cats.syntax.foldable.*
 import dolphin.Message.VolatileMessage
 import dolphin.suite.ResourceSuite
 
+import weaver.{GlobalRead, IOSuite}
+import weaver.scalacheck.Checkers
+
 import java.util.UUID
 import scala.concurrent.duration.*
 
-object VolatileSubscriptionListenerSuite extends ResourceSuite {
+class VolatileSubscriptionListenerSuite(global: GlobalRead) extends IOSuite with ResourceSuite with Checkers {
 
   override type Res = VolatileSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = VolatileSession.resource(Config.Default)
+  override def sharedResource: Resource[IO, Res] = global.getOrFailR[Res]()
 
   test("onEvent with handler should be able to stop appends properly") { session =>
     val uuid = UUID.randomUUID().toString

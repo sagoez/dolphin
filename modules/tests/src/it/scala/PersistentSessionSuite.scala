@@ -1,18 +1,20 @@
 package dolphin
 
 import cats.effect.IO
+import weaver.{GlobalRead, IOSuite}
 import cats.effect.kernel.Resource
 import dolphin.setting.UpdatePersistentSubscriptionToAllSettings
 import io.grpc.StatusRuntimeException
 import dolphin.suite.ResourceSuite
 
 import java.util.UUID
+import weaver.scalacheck.Checkers
 
-object PersistentSessionSuite extends ResourceSuite {
+class PersistentSessionSuite(global: GlobalRead) extends IOSuite with ResourceSuite with Checkers {
 
   override type Res = PersistentSession[IO]
 
-  override def sharedResource: Resource[IO, Res] = PersistentSession.resource(Config.Default)
+  override def sharedResource: Resource[IO, Res] = global.getOrFailR[Res]()
 
   test("should be able to create a persistent subscription to the all stream") { session =>
     val uuid = UUID.randomUUID().toString

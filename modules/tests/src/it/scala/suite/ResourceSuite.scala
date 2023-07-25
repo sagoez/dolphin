@@ -4,16 +4,23 @@ import cats.data.Validated
 import cats.effect.IO
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.noop.NoOpLogger
-import weaver.scalacheck.{CheckConfig, Checkers}
-import weaver.{Expectations, IOSuite, TestName}
+import weaver.{Expectations, GlobalResource}
 
 import scala.concurrent.duration.*
+import cats.effect.Resource
+import weaver.GlobalWrite
+import dolphin.PersistentSession
+import dolphin.Config
+import weaver.ResourceTag
+import scala.concurrent.duration.Duration
+import dolphin.VolatileSession
 
-abstract class ResourceSuite extends IOSuite with Checkers {
+trait ResourceSuite {
+
+  implicit val PersistentResourceTag = ResourceTag.classBasedInstance[PersistentSession[IO]]
+  implicit val VolatileResourceTag   = ResourceTag.classBasedInstance[VolatileSession[IO]]
 
   implicit val logger: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
-
-  override def checkConfig: CheckConfig = CheckConfig.default.copy(minimumSuccessful = 1)
 
   def expectAtLeastOne[A, B](value: List[A])(equalTo: B): Boolean = value.contains(equalTo)
 
@@ -52,26 +59,23 @@ abstract class ResourceSuite extends IOSuite with Checkers {
     retry(0, 100)
   }
 
-  def testWithRetry(name: TestName, retries: Int = 3): PartiallyAppliedTest = {
-    var count                        = 0
-    var delay                        = 100.milliseconds
-    var result: PartiallyAppliedTest = null
-    while (count < retries)
-      try {
-        result = super.test(name)
-        count = retries
-      } catch {
-        case _: Throwable =>
-          count += 1
-          if (count < retries) {
-            println(s"Test failed, retrying in ${delay.toMillis} ms ($count/$retries)...")
-            Thread.sleep(delay.toMillis)
-            delay = delay * 2
-          } else {
-            println("Maximum number of retries reached")
-          }
-      }
-    result
-  }
+}
+
+object SharedResourceSuite extends ResourceSuite with GlobalResource {
+
+  override def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
+    for {
+      persistentSession <- PersistentSession.resource[IO](
+                             Config
+                               .Builder
+                               .withHost("localhost")
+                               .withPort(2113)
+                               .withTls(false)
+                               .build
+                           )
+      volatileSession   <- VolatileSession.resource[IO](Config.Default)
+      _                 <- global.putR(persistentSession)
+      _                 <- global.putR(volatileSession)
+    } yield ()
 
 }
