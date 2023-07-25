@@ -6,14 +6,14 @@ object Dependencies {
 
     val betterMonadicFor   = "0.3.1"
     val catsCore           = "2.9.0"
-    val catsEffect         = "3.5.0"
+    val catsEffect         = "3.5.1"
     val fs2                = "3.7.0"
-    val eventStoreDbClient = "4.2.0"
+    val eventStoreDbClient = "4.3.0"
     val kindProjector      = "0.13.2"
     val log4cats           = "2.6.0"
     val logback            = "1.4.8"
     val organizeImports    = "0.6.0"
-    val semanticDB         = "4.7.8"
+    val semanticDB         = "4.8.5"
     val weaver             = "0.8.3"
 
   }

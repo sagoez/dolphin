@@ -5,10 +5,13 @@
 package dolphin
 
 import scala.annotation.implicitNotFound
+import scala.concurrent.duration.Duration
 
 import dolphin.Config.Base.*
 import dolphin.Config.*
 import dolphin.concurrent.NodePreference
+
+
 
 sealed abstract class Config {
   val host: EventStoreHost
@@ -38,11 +41,10 @@ object Config {
 
     sealed trait Empty    extends Base
     sealed trait Optional extends Base
-    sealed trait Host     extends Base
 
+    sealed trait Host extends Base
     sealed trait Port extends Base
-
-    sealed trait Tls extends Base
+    sealed trait Tls  extends Base
 
     type Required = Empty & Host & Port & Tls
   }
@@ -85,33 +87,33 @@ object Config {
       */
     def withTls(tls: Boolean): ConfigBuilder[B & Tls] = withTls(EventStoreTls(tls))
 
-    /** An optional length of time (in milliseconds) to use for gRPC deadlines.
+    /** An optional length of time to use for gRPC deadlines.
       */
-    def withDeadline(deadline: Long): ConfigBuilder[B & Optional] = self.copy(_deadline = Some(deadline))
+    def withDeadline(deadline: Duration): ConfigBuilder[B & Optional] = self.copy(_deadline = Some(deadline.toMillis))
 
-    /** How long to wait before retrying a new discovery process (in milliseconds).
+    /** How long to wait before retrying a new discovery process.
       */
     def withDiscoveryInterval(
-      discoveryInterval: Int
-    ): ConfigBuilder[B & Optional] = self.copy(_discoveryInterval = Some(discoveryInterval))
+      discoveryInterval: Duration
+    ): ConfigBuilder[B & Optional] = self.copy(_discoveryInterval = Some(discoveryInterval.toMillis.toInt))
 
-    /** How long to wait for the gossip request to timeout (in seconds).
+    /** How long to wait for the gossip request to timeout.
       */
     def withGossipTimeout(
-      gossipTimeout: Int
-    ): ConfigBuilder[B & Optional] = self.copy(_gossipTimeout = Some(gossipTimeout))
+      gossipTimeout: Duration
+    ): ConfigBuilder[B & Optional] = self.copy(_gossipTimeout = Some(gossipTimeout.toMillis.toInt))
 
-    /** The amount of time (in milliseconds) the sender of the keepalive ping waits for an acknowledgement.
+    /** The amount of time the sender of the keepalive ping waits for an acknowledgement.
       */
     def withKeepAliveTimeout(
-      keepAliveTimeout: Long
-    ): ConfigBuilder[B & Optional] = self.copy(_keepAliveTimeout = Some(keepAliveTimeout))
+      keepAliveTimeout: Duration
+    ): ConfigBuilder[B & Optional] = self.copy(_keepAliveTimeout = Some(keepAliveTimeout.toMillis))
 
-    /** The amount of time (in milliseconds) to wait after which a keepalive ping is sent on the transport.
+    /** The amount of time to wait after which a keepalive ping is sent on the transport.
       */
     def withKeepAliveInterval(
-      keepAliveInterval: Long
-    ): ConfigBuilder[B & Optional] = self.copy(_keepAliveInterval = Some(keepAliveInterval))
+      keepAliveInterval: Duration
+    ): ConfigBuilder[B & Optional] = self.copy(_keepAliveInterval = Some(keepAliveInterval.toMillis))
 
     /** How many times to attempt connection before throwing.
       */
@@ -144,7 +146,7 @@ object Config {
     def build(
       implicit @implicitNotFound(
         "You must specify a host, port and tls. Try using Config.Default instead."
-      ) ev: B =:= Base.Required
+      ) ev: B <:< Base.Required
     ): Config =
       new Config {
         val host: EventStoreHost                               = _host
