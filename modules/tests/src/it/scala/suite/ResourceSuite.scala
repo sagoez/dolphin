@@ -17,8 +17,10 @@ import dolphin.VolatileSession
 
 trait ResourceSuite {
 
-  implicit val PersistentResourceTag = ResourceTag.classBasedInstance[PersistentSession[IO]]
-  implicit val VolatileResourceTag   = ResourceTag.classBasedInstance[VolatileSession[IO]]
+  implicit val PersistentResourceTag: ResourceTag[PersistentSession[IO]] = ResourceTag
+    .classBasedInstance[PersistentSession[IO]]
+  implicit val VolatileResourceTag: ResourceTag[VolatileSession[IO]]     = ResourceTag
+    .classBasedInstance[VolatileSession[IO]]
 
   implicit val logger: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
 
