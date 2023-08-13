@@ -12,27 +12,63 @@ import org.typelevel.log4cats.Logger
 import sourcecode.{File, Line}
 
 sealed trait Trace[F[_]] {
-  def trace(message: String)(implicit line: Line, file: File): F[Unit]
-  def info(message: String)(implicit line: Line, file: File): F[Unit]
-  def error(cause: Throwable, message: Option[String])(implicit line: Line, file: File): F[Unit]
+
+  def trace(
+    message: String
+  )(
+    implicit line: Line,
+    file: File
+  ): F[Unit]
+
+  def info(
+    message: String
+  )(
+    implicit line: Line,
+    file: File
+  ): F[Unit]
+
+  def error(
+    cause: Throwable,
+    message: Option[String]
+  )(
+    implicit line: Line,
+    file: File
+  ): F[Unit]
 
 }
 
 object Trace {
 
-  def apply[F[_]](implicit F: Trace[F]): Trace[F] = implicitly[Trace[F]]
+  def apply[F[_]](
+    implicit F: Trace[F]
+  ): Trace[F] = implicitly[Trace[F]]
 
   object NoOp {
 
     implicit def instance[F[_]: Applicative]: Trace[F] =
       new Trace[F] {
 
-        override def trace(message: String)(implicit line: Line, file: File): F[Unit] = Applicative[F].unit
+        override def trace(
+          message: String
+        )(
+          implicit line: Line,
+          file: File
+        ): F[Unit] = Applicative[F].unit
 
-        override def info(message: String)(implicit line: Line, file: File): F[Unit] = Applicative[F].unit
+        override def info(
+          message: String
+        )(
+          implicit line: Line,
+          file: File
+        ): F[Unit] = Applicative[F].unit
 
-        override def error(cause: Throwable, message: Option[String])(implicit line: Line, file: File): F[Unit] =
-          Applicative[F].unit
+        override def error(
+          cause: Throwable,
+          message: Option[String]
+        )(
+          implicit line: Line,
+          file: File
+        ): F[Unit] = Applicative[F].unit
       }
   }
 
