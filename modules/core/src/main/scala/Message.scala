@@ -56,10 +56,17 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
       case _: Message.Confirmation[F, T] => onConfirmation
     }
 
-  def flatTap(f: Message[F, T] => F[Unit])(implicit F: Monad[F]): F[Message[F, T]] =
-    F.flatMap(f(self))(_ => F.pure(self))
+  def flatTap(
+    f: Message[F, T] => F[Unit]
+  )(
+    implicit F: Monad[F]
+  ): F[Message[F, T]] = F.flatMap(f(self))(_ => F.pure(self))
 
-  def map[A](f: Message[F, T] => A)(implicit F: Applicative[F]): F[A] = F.pure(f(self))
+  def map[A](
+    f: Message[F, T] => A
+  )(
+    implicit F: Applicative[F]
+  ): F[A] = F.pure(f(self))
 
 }
 
