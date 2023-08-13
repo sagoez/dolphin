@@ -2,7 +2,7 @@ import Dependencies._
 
 ThisBuild / tlBaseVersion := "0.0"
 
-ThisBuild / scalaVersion               := "2.13.10"
+ThisBuild / scalaVersion               := "2.13.11"
 ThisBuild / startYear                  := Some(2022)
 ThisBuild / scalafixDependencies ++= Seq(Libraries.organizeImports)
 ThisBuild / organization               := "io.github.lapsushq"
