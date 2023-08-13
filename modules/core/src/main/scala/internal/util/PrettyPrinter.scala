@@ -9,7 +9,13 @@ import sourcecode.{File, Line}
 
 private[dolphin] object PrettyPrinter {
 
-  def beautify(error: Throwable, msg: Option[String] = None)(implicit line: Line, file: File): String = {
+  def beautify(
+    error: Throwable,
+    msg: Option[String] = None
+  )(
+    implicit line: Line,
+    file: File
+  ): String = {
     val message  = Option(error.getMessage).getOrElse(error.getClass.getSimpleName)
     val metadata = {
       val stackTraceString = error
