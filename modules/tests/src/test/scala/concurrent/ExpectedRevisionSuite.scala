@@ -16,29 +16,29 @@ object ExpectedRevisionSuite extends SimpleIOSuite with Checkers {
   test("Should be able to convert from ExpectedRevision to DbClient.ExpectedRevision") {
     // Technically, expected revision can't be negative, hence the use of posNumericGen
     forall(posNumericGen) { value =>
-      expect(ExpectedRevision.Any.toJava == dbclient.ExpectedRevision.any())
-      expect(ExpectedRevision.NoStream.toJava == dbclient.ExpectedRevision.noStream())
-      expect(ExpectedRevision.StreamExists.toJava == dbclient.ExpectedRevision.streamExists())
-      expect(ExpectedRevision.Exact(value).toJava == dbclient.ExpectedRevision.expectedRevision(value))
+      expect(ExpectedRevision.Any.toJava == dbclient.ExpectedRevision.any()) and
+        expect(ExpectedRevision.NoStream.toJava == dbclient.ExpectedRevision.noStream()) and
+        expect(ExpectedRevision.StreamExists.toJava == dbclient.ExpectedRevision.streamExists()) and
+        expect(ExpectedRevision.Exact(value).toJava == dbclient.ExpectedRevision.expectedRevision(value))
     }
 
   }
 
   test("Should be able to convert from DbClient.ExpectedRevision to ExpectedRevision") {
     forall(posNumericGen) { value =>
-      expect(dbclient.ExpectedRevision.any().toScala == ExpectedRevision.Any)
-      expect(dbclient.ExpectedRevision.noStream().toScala == ExpectedRevision.NoStream)
-      expect(dbclient.ExpectedRevision.streamExists().toScala == ExpectedRevision.StreamExists)
-      expect(dbclient.ExpectedRevision.expectedRevision(value).toScala == ExpectedRevision.Exact(value))
+      expect(dbclient.ExpectedRevision.any().toScala == ExpectedRevision.Any) and
+        expect(dbclient.ExpectedRevision.noStream().toScala == ExpectedRevision.NoStream) and
+        expect(dbclient.ExpectedRevision.streamExists().toScala == ExpectedRevision.StreamExists) and
+        expect(dbclient.ExpectedRevision.expectedRevision(value).toScala == ExpectedRevision.Exact(value))
     }
   }
 
   test("Should be able to convert from ExpectedRevision to DbClient.ExpectedRevision and back") {
     forall(posNumericGen) { value =>
-      expect(ExpectedRevision.Any.toJava.toScala == ExpectedRevision.Any)
-      expect(ExpectedRevision.NoStream.toJava.toScala == ExpectedRevision.NoStream)
-      expect(ExpectedRevision.StreamExists.toJava.toScala == ExpectedRevision.StreamExists)
-      expect(ExpectedRevision.Exact(value).toJava.toScala == ExpectedRevision.Exact(value))
+      expect(ExpectedRevision.Any.toJava.toScala == ExpectedRevision.Any) and
+        expect(ExpectedRevision.NoStream.toJava.toScala == ExpectedRevision.NoStream) and
+        expect(ExpectedRevision.StreamExists.toJava.toScala == ExpectedRevision.StreamExists) and
+        expect(ExpectedRevision.Exact(value).toJava.toScala == ExpectedRevision.Exact(value))
     }
   }
 

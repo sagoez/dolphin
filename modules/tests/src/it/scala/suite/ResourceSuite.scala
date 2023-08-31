@@ -24,7 +24,7 @@ trait ResourceSuite {
 
   implicit val logger: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
 
-  def expectAtLeastOne[A, B](value: List[A])(equalTo: B): Boolean = value.contains(equalTo)
+  def expectAtLeastOne[A, B <: A](value: List[A])(equalTo: B): Boolean = value.contains[A](equalTo)
 
   def expectAtLeastN[A, B](value: List[A], n: Int)(equalTo: B): Boolean = value.count(value => value == equalTo) >= n
 

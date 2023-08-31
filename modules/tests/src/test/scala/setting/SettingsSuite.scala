@@ -42,7 +42,7 @@ object SettingsSuite extends FunSuite {
 
   test("EventStoreSettings should return default settings") {
     val options = Config.Default
-    expect(!options.tls.tls) and expect(options.deadline.contains(10_000)) and expect(
+    expect(!options.tls.tls) and expect(options.deadline.contains[Long](10_000)) and expect(
       !options.tlsVerifyCert
     ) and expect(
       !options.dnsDiscover
