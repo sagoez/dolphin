@@ -23,7 +23,7 @@ object Dependencies {
     val catsEffect: ModuleID         = "org.typelevel" %% "cats-effect"    % V.catsEffect
     val fs2Core: ModuleID            = "co.fs2"        %% "fs2-core"       % V.fs2
     val eventStoreDbClient: ModuleID = "com.eventstore" % "db-client-java" % V.eventStoreDbClient
-    val sourceCode: ModuleID         = "com.lihaoyi"   %% "sourcecode"     % "0.3.0"
+    val sourceCode: ModuleID         = "com.lihaoyi"   %% "sourcecode"     % "0.3.1"
 
     val log4cats: ModuleID        = "org.typelevel"        %% "log4cats-slf4j"   % V.log4cats
     val logback: ModuleID         = "ch.qos.logback"        % "logback-classic"  % V.logback
