@@ -25,15 +25,12 @@ private[dolphin] object PrettyPrinter {
         }
         .mkString("\n")
 
-//
       s"""
         |Stack trace:
         |${msg.getOrElse("")}
         |ℹ️ maybe ${file.value}:${line.value} ℹ️
         |$stackTraceString
         |""".stripMargin
-
-      // beautify stack trace
 
     }
     val hint =

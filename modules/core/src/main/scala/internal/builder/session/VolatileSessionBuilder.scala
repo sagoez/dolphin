@@ -62,7 +62,7 @@ private[dolphin] object VolatileSessionBuilder {
   ): Resource[F, VolatileSession[F]] =
     Resource.make {
       FutureLift[F].delay(new VolatileSession[F] { self =>
-        def shutdown: F[Unit] = FutureLift[F].delay(client.shutdown())
+        def shutdown: F[Unit] = FutureLift[F].futureLift(client.shutdown().thenApply(_ => ()))
 
         def deleteStream(
           streamAggregateId: String

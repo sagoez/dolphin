@@ -4,13 +4,15 @@
 
 package dolphin.internal.builder
 
+import java.net.InetSocketAddress
+
 import dolphin.*
 
 import cats.MonadThrow
 import cats.effect.kernel.{MonadCancelThrow, Resource}
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
-import com.eventstore.dbclient.{Endpoint, EventStoreDBClientSettings}
+import com.eventstore.dbclient.EventStoreDBClientSettings
 import fs2.Stream
 
 private[internal] object ClientBuilder {
@@ -24,7 +26,7 @@ private[internal] object ClientBuilder {
         EventStoreDBClientSettings
           .builder()
           .tls(options.tls.tls)
-          .addHost(new Endpoint(options.host.host, options.port.port))
+          .addHost(new InetSocketAddress(options.host.host, options.port.port))
           .defaultDeadline(options.deadline.getOrElse(Deadline))
           .discoveryInterval(options.discoveryInterval.getOrElse(DiscoveryInterval))
           .gossipTimeout(options.gossipTimeout.getOrElse(GossipTimeout))
@@ -32,7 +34,6 @@ private[internal] object ClientBuilder {
           .keepAliveInterval(options.keepAliveInterval.getOrElse(KeepAliveInterval))
           .maxDiscoverAttempts(options.maxDiscoverAttempts.getOrElse(MaxDiscoverAttempts))
           .dnsDiscover(options.dnsDiscover)
-          .throwOnAppendFailure(options.throwOnAppendFailure)
           .nodePreference(options.nodePreference.map(_.toJava).getOrElse(NodePreference.toJava))
           .tlsVerifyCert(options.tlsVerifyCert)
           .buildConnectionSettings()

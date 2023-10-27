@@ -22,7 +22,6 @@ sealed abstract class Config {
   val keepAliveInterval: Option[Long]        = None
   val maxDiscoverAttempts: Option[Int]       = None
   val dnsDiscover: Boolean                   = false
-  val throwOnAppendFailure: Boolean          = false
   val nodePreference: Option[NodePreference] = None
   val tlsVerifyCert: Boolean                 = false
 }
@@ -58,7 +57,6 @@ object Config {
     _keepAliveInterval: Option[Long] = Some(KeepAliveInterval),
     _maxDiscoverAttempts: Option[Int] = Some(MaxDiscoverAttempts),
     _dnsDiscover: Boolean = false,
-    _throwOnAppendFailure: Boolean = false,
     _nodePreference: Option[NodePreference] = Some(NodePreference.Leader),
     _tlsVerifyCert: Boolean = false
   ) { self =>
@@ -123,12 +121,6 @@ object Config {
       */
     def withDnsDiscover(dnsDiscover: Boolean): ConfigBuilder[B & Optional] = self.copy(_dnsDiscover = dnsDiscover)
 
-    /** If an exception is thrown whether an append operation fails.
-      */
-    def withThrowOnAppendFailure(
-      throwOnAppendFailure: Boolean
-    ): ConfigBuilder[B & Optional] = self.copy(_throwOnAppendFailure = throwOnAppendFailure)
-
     /** Preferred node type when picking a node within a cluster.
       */
     def withNodePreference(
@@ -157,7 +149,6 @@ object Config {
         override val keepAliveInterval: Option[CommitUnsigned] = _keepAliveInterval
         override val maxDiscoverAttempts: Option[Int]          = _maxDiscoverAttempts
         override val dnsDiscover: Boolean                      = _dnsDiscover
-        override val throwOnAppendFailure: Boolean             = _throwOnAppendFailure
         override val nodePreference: Option[NodePreference]    = _nodePreference
         override val tlsVerifyCert: Boolean                    = _tlsVerifyCert
       }

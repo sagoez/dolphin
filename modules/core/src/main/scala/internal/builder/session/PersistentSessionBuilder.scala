@@ -39,7 +39,7 @@ private[dolphin] object PersistentSessionBuilder {
   ): Resource[F, PersistentSession[F]] =
     Resource.make {
       FutureLift[F].delay(new PersistentSession[F] { self =>
-        def shutdown: F[Unit] = FutureLift[F].delay(client.shutdown())
+        def shutdown: F[Unit] = FutureLift[F].futureLift(client.shutdown().thenApply(_ => ()))
 
         def createToAll(
           subscriptionGroupName: String,
