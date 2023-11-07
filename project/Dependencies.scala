@@ -8,7 +8,7 @@ object Dependencies {
     val catsCore           = "2.10.0"
     val catsEffect         = "3.5.2"
     val fs2                = "3.9.3"
-    val eventStoreDbClient = "5.0.0"
+    val eventStoreDbClient = "5.1.1"
     val kindProjector      = "0.13.2"
     val log4cats           = "2.6.0"
     val logback            = "1.4.11"
