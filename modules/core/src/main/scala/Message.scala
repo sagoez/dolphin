@@ -30,12 +30,6 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
       case _                      => false
     }
 
-  def isError: Boolean =
-    self match {
-      case _: Message.Error[F, T] => true
-      case _                      => false
-    }
-
   def isCancelled: Boolean =
     self match {
       case _: Message.Cancelled[F, T] => true
@@ -48,11 +42,10 @@ sealed trait Message[F[_], T <: Consumer[F]] extends Product with Serializable {
       case _                             => false
     }
 
-  def fold[A](onEvent: DEvent => A, onError: Throwable => A, onCancel: A, onConfirmation: A): A =
+  def fold[A](onEvent: DEvent => A, onCancel: Throwable => A, onConfirmation: A): A =
     self match {
       case Message.Event(_, event, _)    => onEvent(event)
-      case Message.Error(_, error)       => onError(error)
-      case _: Message.Cancelled[F, T]    => onCancel
+      case Message.Cancelled(_, error)   => onCancel(error)
       case _: Message.Confirmation[F, T] => onConfirmation
     }
 
@@ -81,13 +74,9 @@ object Message {
     retryCount: Option[Int] = None
   ) extends Message[F, T]
 
-  final case class Error[F[_], T <: Consumer[F]](
+  final case class Cancelled[F[_], T <: Consumer[F]](
     consumer: T,
     error: Throwable
-  ) extends Message[F, T]
-
-  final case class Cancelled[F[_], T <: Consumer[F]](
-    consumer: T
   ) extends Message[F, T]
 
   final case class Confirmation[F[_], T <: Consumer[F]](

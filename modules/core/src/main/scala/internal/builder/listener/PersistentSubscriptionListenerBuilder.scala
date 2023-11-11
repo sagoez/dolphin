@@ -36,19 +36,15 @@ private[dolphin] object PersistentSubscriptionListenerBuilder {
       new JSubscriptionListener {
 
         override def onCancelled(
-          subscription: JPersistentSubscription
-        ): Unit = dispatcher.unsafeRunAndForget(handler(Message.Cancelled(PersistentConsumer.make(subscription))))
+          subscription: JPersistentSubscription,
+          error: Throwable
+        ): Unit = dispatcher.unsafeRunAndForget(
+          handler(Message.Cancelled(PersistentConsumer.make(subscription), error))
+        )
 
         override def onConfirmation(
           subscription: JPersistentSubscription
         ): Unit = dispatcher.unsafeRunAndForget(handler(Message.Confirmation(PersistentConsumer.make(subscription))))
-
-        override def onError(
-          subscription: JPersistentSubscription,
-          throwable: Throwable
-        ): Unit = dispatcher.unsafeRunAndForget(
-          handler(Message.Error(PersistentConsumer.make(subscription), throwable))
-        )
 
         override def onEvent(subscription: JPersistentSubscription, retryCount: Int, event: ResolvedEvent): Unit =
           dispatcher.unsafeRunAndForget(
@@ -67,21 +63,16 @@ private[dolphin] object PersistentSubscriptionListenerBuilder {
 
         /** Called when the subscription is cancelled or dropped. */
         override def onCancelled(
-          subscription: JPersistentSubscription
-        ): Unit = dispatcher.unsafeRunAndForget(queue.offer(Message.Cancelled(PersistentConsumer.make(subscription))))
+          subscription: JPersistentSubscription,
+          error: Throwable
+        ): Unit = dispatcher.unsafeRunAndForget(
+          queue.offer(Message.Cancelled(PersistentConsumer.make(subscription), error))
+        )
 
         override def onConfirmation(
           subscription: JPersistentSubscription
         ): Unit = dispatcher.unsafeRunAndForget(
           queue.offer(Message.Confirmation(PersistentConsumer.make(subscription)))
-        )
-
-        /** Called when an exception was raised when processing an event. */
-        override def onError(
-          subscription: JPersistentSubscription,
-          throwable: Throwable
-        ): Unit = dispatcher.unsafeRunAndForget(
-          queue.offer(Message.Error(PersistentConsumer.make(subscription), throwable))
         )
 
         /** Called when EventStoreDB sends an event to the subscription. */

@@ -46,23 +46,16 @@ private[dolphin] object VolatileSubscriptionListenerBuilder {
         )
 
         override def onCancelled(
-          subscription: JSubscription
+          subscription: JSubscription,
+          error: Throwable
         ): Unit = dispatcher.unsafeRunAndForget(
-          handler(Message.Cancelled(VolatileConsumer.make(subscription)))
+          handler(Message.Cancelled(VolatileConsumer.make(subscription), error))
         )
 
         override def onConfirmation(
           subscription: JSubscription
         ): Unit = dispatcher.unsafeRunAndForget(
           handler(Message.Confirmation(VolatileConsumer.make(subscription)))
-        )
-
-        /** Called when an exception was raised when processing an event. */
-        override def onError(
-          subscription: JSubscription,
-          throwable: Throwable
-        ): Unit = dispatcher.unsafeRunAndForget(
-          handler(Message.Error(VolatileConsumer.make(subscription), throwable))
         )
 
       }
@@ -81,19 +74,15 @@ private[dolphin] object VolatileSubscriptionListenerBuilder {
 
         /** Called when the subscription is cancelled or dropped. */
         override def onCancelled(
-          subscription: JSubscription
+          subscription: JSubscription,
+          error: Throwable
         ): Unit = dispatcher.unsafeRunAndForget(
-          queue.offer(Message.Cancelled[F, VolatileConsumer[F]](VolatileConsumer.make(subscription)))
+          queue.offer(Message.Cancelled[F, VolatileConsumer[F]](VolatileConsumer.make(subscription), error))
         )
 
         override def onConfirmation(
           subscription: JSubscription
         ): Unit = dispatcher.unsafeRunAndForget(queue.offer(Message.Confirmation(VolatileConsumer.make(subscription))))
-
-        /** Called when an exception was raised when processing an event. */
-        override def onError(subscription: JSubscription, throwable: Throwable): Unit = dispatcher.unsafeRunAndForget(
-          queue.offer(Message.Error(VolatileConsumer.make(subscription), throwable))
-        )
 
         /** Called when EventStoreDB sends an event to the subscription. */
         override def onEvent(

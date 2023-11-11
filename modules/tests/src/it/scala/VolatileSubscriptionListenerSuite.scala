@@ -24,7 +24,6 @@ class VolatileSubscriptionListenerSuite(global: GlobalRead) extends IOSuite with
     def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
       case e: Message.Event[IO, VolatileConsumer[IO]]        => ref.update("onEvent" :: _) *> e.consumer.stop
       case _: Message.Confirmation[IO, VolatileConsumer[IO]] => ref.update("onConfirmation" :: _)
-      case _: Message.Error[IO, VolatileConsumer[IO]]        => ref.update("onError" :: _)
       case _: Message.Cancelled[IO, VolatileConsumer[IO]]    => ref.update("onCancelled" :: _)
     }
 
@@ -47,7 +46,6 @@ class VolatileSubscriptionListenerSuite(global: GlobalRead) extends IOSuite with
     def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
       case e: Message.Event[IO, VolatileConsumer[IO]]        => ref.update("onEvent" :: _) *> e.consumer.stop
       case _: Message.Confirmation[IO, VolatileConsumer[IO]] => ref.update("onConfirmation" :: _)
-      case _: Message.Error[IO, VolatileConsumer[IO]]        => ref.update("onError" :: _)
       case _: Message.Cancelled[IO, VolatileConsumer[IO]]    => ref.update("onCancelled" :: _)
     }
 
@@ -74,8 +72,7 @@ class VolatileSubscriptionListenerSuite(global: GlobalRead) extends IOSuite with
       def handler(ref: Ref[F, List[String]]): VolatileMessage[IO] => IO[Unit] = {
         case Message.Event(_, _, _)  => ref.update("onEvent" :: _)
         case Message.Confirmation(_) => ref.update("onConfirmation" :: _)
-        case Message.Error(_, _)     => ref.update("onError" :: _)
-        case Message.Cancelled(_)    => ref.update("onCancelled" :: _)
+        case Message.Cancelled(_, _) => ref.update("onCancelled" :: _)
       }
 
       (for {

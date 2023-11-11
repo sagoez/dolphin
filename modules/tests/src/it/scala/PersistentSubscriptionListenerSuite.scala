@@ -23,8 +23,7 @@ class PersistentSubscriptionListenerSuite(global: GlobalRead) extends IOSuite wi
 
     def handler(ref: Ref[F, List[String]]): MessageHandler[F, PersistentMessage[F]] = {
       case Message.Event(_, event, _) => logger.info(s"Received event: $event")
-      case Message.Error(_, error)    => logger.error(error)(s"Received error: $error")
-      case Message.Cancelled(_)       => ref.update("OnCancelled" :: _)
+      case Message.Cancelled(_, _)    => ref.update("OnCancelled" :: _)
       case Message.Confirmation(sus)  => ref.update("OnConfirmed" :: _) >> sus.stop
     }
 
@@ -53,8 +52,7 @@ class PersistentSubscriptionListenerSuite(global: GlobalRead) extends IOSuite wi
       _           <- Stream.eval(session.createToStream(uuid, uuid))
       _           <- session.subscribeToStream(uuid, uuid, PersistentSubscriptionSettings.Default).take(2).evalMap {
                        case Message.Event(_, event, _) => IO.println(s"Received event: $event")
-                       case Message.Error(_, error)    => IO.println(s"Received error: $error")
-                       case Message.Cancelled(_)       => ref.update("OnCancelled" :: _)
+                       case Message.Cancelled(_, _)    => ref.update("OnCancelled" :: _)
                        case Message.Confirmation(sus)  => ref.update("OnConfirmed" :: _) >> sus.stop
                      }
       expectation <- Stream.eval(

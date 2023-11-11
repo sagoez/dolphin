@@ -149,8 +149,7 @@ object Main extends IOApp.Simple {
         .concurrently {
           session.subscribeToStream("ShoppingCart").evalMap {
             case Message.Event(_, event, _) => logger.info(new String(event.getEventData))
-            case Message.Error(_, error) => logger.error(s"Received error: ${error}")
-            case Message.Cancelled(_) => logger.info("Received cancellation")
+            case Message.Cancelled(_, error) => logger.info(s"Received cancellation error: ${error}")
             case Message.Confirmation(_) => logger.info("Received confirmation")
           }
         }
@@ -177,9 +176,7 @@ object Main extends IOApp.Simple {
   private val handlers: Message[IO, VolatileConsumer[IO]] => IO[Unit] = {
     case Message.Event(consumer, event, retryCount) =>
       logger.info(s"Received event: $event")
-    case Message.Error(consumer, error) =>
-      logger.error(error)(s"Received error: $error")
-    case Message.Cancelled(consumer) =>
+    case Message.Cancelled(consumer, error) =>
       logger.info(s"Received cancellation")
     case Message.Confirmation(consumer) =>
       logger.info(s"Received confirmation")
