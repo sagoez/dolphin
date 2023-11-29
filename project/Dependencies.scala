@@ -11,7 +11,7 @@ object Dependencies {
     val eventStoreDbClient = "5.2.0"
     val kindProjector      = "0.13.2"
     val log4cats           = "2.6.0"
-    val logback            = "1.4.12"
+    val logback            = "1.4.13"
     val organizeImports    = "0.6.0"
     val semanticDB         = "4.8.14"
     val weaver             = "0.8.3"
