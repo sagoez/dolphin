@@ -14,7 +14,7 @@ object Dependencies {
     val logback            = "1.4.14"
     val organizeImports    = "0.6.0"
     val semanticDB         = "4.8.15"
-    val weaver             = "0.8.3"
+    val weaver             = "0.8.4"
 
   }
 
